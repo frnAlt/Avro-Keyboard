@@ -1686,6 +1686,12 @@ object AvroMainForm1: TAvroMainForm1
       ShortCut = 49238
       OnClick = VoiceToText1Click
     end
+    object BanglaSymbols1: TMenuItem
+      Caption = 'Bangla Symbols & Emoji Picker...'
+      ImageIndex = 22
+      ShortCut = 49235
+      OnClick = BanglaSymbols1Click
+    end
     object LayoutViewerShowactivekeyboardlayout1: TMenuItem
       Caption = 'Layout Viewer : Show active keyboard layout...'
       ImageIndex = 22

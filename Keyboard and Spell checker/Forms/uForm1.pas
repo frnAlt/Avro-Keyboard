@@ -64,6 +64,7 @@ type
     KeyboardLayoutEditorBuildcustomlayouts1: TMenuItem;
     SkinDesignerDesignyourownskin1: TMenuItem;
     VoiceToText1: TMenuItem;
+    BanglaSymbols1: TMenuItem;
     N3: TMenuItem;
     Options1: TMenuItem;
     N4: TMenuItem;
@@ -326,6 +327,7 @@ type
     procedure KeyboardLayoutEditorBuildcustomlayouts1Click(Sender: TObject);
     procedure SkinDesignerDesignyourownskin1Click(Sender: TObject);
     procedure VoiceToText1Click(Sender: TObject);
+    procedure BanglaSymbols1Click(Sender: TObject);
     procedure InternetCheckTimer(Sender: TObject);
     procedure TrayDblClick(Sender: TObject);
     procedure TrayClick(Sender: TObject);
@@ -428,7 +430,8 @@ uses
   ufrmEncodingWarning,
   DebugLog,
   WindowsDarkMode,
-  ufrmVoiceDictate;
+  ufrmVoiceDictate,
+  ufrmSymbolsPicker;
 
 { =============================================================================== }
 
@@ -1670,6 +1673,13 @@ begin
   if frmVoiceDictate = nil then
     Application.CreateForm(TfrmVoiceDictate, frmVoiceDictate);
   frmVoiceDictate.StartDictation;
+end;
+
+procedure TAvroMainForm1.BanglaSymbols1Click(Sender: TObject);
+begin
+  if frmSymbolsPicker = nil then
+    Application.CreateForm(TfrmSymbolsPicker, frmSymbolsPicker);
+  frmSymbolsPicker.Show;
 end;
 
 procedure TAvroMainForm1.Spellcheck1Click(Sender: TObject);
