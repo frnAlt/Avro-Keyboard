@@ -41,11 +41,26 @@ or,
 
 ### Building Projects
 
-Delphi community edition doesn't come with command line compiler. In order to build projects:
+#### Option A: Automated One-Click / Headless Build (Recommended)
+You can compile all projects and generate a portable distribution package without manually opening the IDE:
 
+- **PowerShell:**
+  ```powershell
+  .\build-release.ps1 -Configuration Release -Platform Win32
+  ```
+- **Batch Command:**
+  ```cmd
+  build-portable.bat
+  ```
+This compiles `WholeProject.groupproj`, renames binaries, packages `Avro-Keyboard-Portable.zip`, and generates `SHA256SUMS.txt`.
+
+#### Option B: Manual Build via Delphi IDE
 - Run `build-ce.bat`
 - Open `WholeProject.groupproj` in Delphi IDE and run `Build All` from the project group
 - Built and renamed files will be under `build` directory
+
+### Continuous Integration & Automated Releases
+Automated GitHub Actions workflow (`.github/workflows/build-release.yml`) builds all targets on Windows runners and automatically publishes versioned release packages when a release tag (e.g. `v5.7.0`) is pushed.
 
 ## Notable contributions
 
