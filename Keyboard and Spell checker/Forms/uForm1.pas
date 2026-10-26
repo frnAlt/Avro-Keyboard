@@ -63,6 +63,7 @@ type
     AvroMouseClicknType1: TMenuItem;
     KeyboardLayoutEditorBuildcustomlayouts1: TMenuItem;
     SkinDesignerDesignyourownskin1: TMenuItem;
+    VoiceToText1: TMenuItem;
     N3: TMenuItem;
     Options1: TMenuItem;
     N4: TMenuItem;
@@ -324,6 +325,7 @@ type
     procedure ManageAutoCorrectentries1Click(Sender: TObject);
     procedure KeyboardLayoutEditorBuildcustomlayouts1Click(Sender: TObject);
     procedure SkinDesignerDesignyourownskin1Click(Sender: TObject);
+    procedure VoiceToText1Click(Sender: TObject);
     procedure InternetCheckTimer(Sender: TObject);
     procedure TrayDblClick(Sender: TObject);
     procedure TrayClick(Sender: TObject);
@@ -425,7 +427,8 @@ uses
   u_VirtualFontInstall,
   ufrmEncodingWarning,
   DebugLog,
-  WindowsDarkMode;
+  WindowsDarkMode,
+  ufrmVoiceDictate;
 
 { =============================================================================== }
 
@@ -1660,6 +1663,13 @@ end;
 procedure TAvroMainForm1.SkinDesignerDesignyourownskin1Click(Sender: TObject);
 begin
   Execute_Something(ExtractFilePath(Application.ExeName) + 'Skin Designer.exe');
+end;
+
+procedure TAvroMainForm1.VoiceToText1Click(Sender: TObject);
+begin
+  if frmVoiceDictate = nil then
+    Application.CreateForm(TfrmVoiceDictate, frmVoiceDictate);
+  frmVoiceDictate.StartDictation;
 end;
 
 procedure TAvroMainForm1.Spellcheck1Click(Sender: TObject);

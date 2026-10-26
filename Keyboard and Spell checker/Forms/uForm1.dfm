@@ -1680,6 +1680,12 @@ object AvroMainForm1: TAvroMainForm1
       ImageIndex = 4
       OnClick = SkinDesignerDesignyourownskin1Click
     end
+    object VoiceToText1: TMenuItem
+      Caption = 'Voice to Text : Speak in Bangla...'
+      ImageIndex = 9
+      ShortCut = 49238
+      OnClick = VoiceToText1Click
+    end
     object LayoutViewerShowactivekeyboardlayout1: TMenuItem
       Caption = 'Layout Viewer : Show active keyboard layout...'
       ImageIndex = 22

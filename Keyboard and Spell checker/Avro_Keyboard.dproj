@@ -1,4 +1,4 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{0219940E-5F78-48B1-8960-2C65283492DA}</ProjectGuid>
         <MainSource>Avro_Keyboard.dpr</MainSource>
@@ -178,6 +178,10 @@
             <Form>LayoutViewer</Form>
         </DCCReference>
         <DCCReference Include="Units\uProcessHandler.pas"/>
+        <DCCReference Include="Units\uAvroVoice.pas"/>
+        <DCCReference Include="Forms\ufrmVoiceDictate.pas">
+            <Form>frmVoiceDictate</Form>
+        </DCCReference>
         <DCCReference Include="Units\uWindowHandlers.pas"/>
         <DCCReference Include="Classes\clsUpdateInfoDownloader.pas"/>
         <DCCReference Include="Classes\clsFileVersion.pas"/>
