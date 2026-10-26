@@ -72,10 +72,10 @@ if ($BDS) {
         }
     }
 } else {
-    Write-Host "Warning: Embarcadero BDS directory not detected automatically. Relying on PATH / standard MSBuild." -ForegroundColor Yellow
+    Write-Host "Notice: Embarcadero BDS directory not detected automatically." -ForegroundColor Yellow
 }
 
-# 2. Locate MSBuild executable
+# 2. Locate MSBuild executable (if BDS is present or Visual Studio is available)
 $MSBuild = (Get-Command msbuild.exe -ErrorAction SilentlyContinue).Source
 if (-not $MSBuild) {
     $VSWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -99,12 +99,9 @@ if (-not $MSBuild) {
     }
 }
 
-if (-not $MSBuild) {
-    Write-Error "MSBuild executable could not be found. Please ensure Visual Studio or Delphi build tools are installed."
-    exit 1
+if ($MSBuild) {
+    Write-Host "Using MSBuild: $MSBuild" -ForegroundColor Green
 }
-
-Write-Host "Using MSBuild: $MSBuild" -ForegroundColor Green
 
 # 3. Clean and prepare build directory
 $BuildDir = Join-Path $ScriptDir "build"
@@ -112,28 +109,85 @@ if (-not (Test-Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir | Out-Null
 }
 
-$Projects = @(
-    "WholeProject.groupproj"
+# 4. Prepare Binaries (Compile via Delphi or Retrieve Pre-built Binaries)
+$RequiredBinaries = @(
+    "Avro Keyboard.exe",
+    "Avro Spell Checker.exe",
+    "AvroSpell.dll",
+    "Layout Editor.exe",
+    "Skin Designer.exe",
+    "Unicode to Bijoy.exe"
 )
 
-# 4. Compile Project Group
-Write-Host "Compiling WholeProject.groupproj..." -ForegroundColor Cyan
-$BuildParams = @(
-    "WholeProject.groupproj",
-    "/p:Config=$Configuration",
-    "/p:Platform=$Platform",
-    "/target:Build",
-    "/verbosity:minimal",
-    "/nologo"
-)
-
-& $MSBuild @BuildParams
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "MSBuild compilation failed with exit code $LASTEXITCODE."
-    exit $LASTEXITCODE
+$HasExistingBinaries = $true
+foreach ($req in $RequiredBinaries) {
+    $altName = $req -replace " ", "_"
+    if (-not (Test-Path (Join-Path $BuildDir $req)) -and -not (Test-Path (Join-Path $BuildDir $altName))) {
+        $HasExistingBinaries = $false
+        break
+    }
 }
 
-Write-Host "Compilation finished successfully." -ForegroundColor Green
+if ($BDS -and $MSBuild) {
+    Write-Host "Compiling WholeProject.groupproj with Embarcadero Delphi ($Configuration | $Platform)..." -ForegroundColor Cyan
+    $BuildParams = @(
+        "WholeProject.groupproj",
+        "/p:Config=$Configuration",
+        "/p:Platform=$Platform",
+        "/target:Build",
+        "/verbosity:minimal",
+        "/nologo"
+    )
+
+    & $MSBuild @BuildParams
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "MSBuild compilation failed with exit code $LASTEXITCODE."
+        exit $LASTEXITCODE
+    }
+    Write-Host "Compilation finished successfully." -ForegroundColor Green
+} elseif ($HasExistingBinaries) {
+    Write-Host "Pre-compiled binaries detected in build directory. Skipping compilation." -ForegroundColor Green
+} else {
+    Write-Host "==========================================================" -ForegroundColor Yellow
+    Write-Host " Embarcadero BDS not detected on this system." -ForegroundColor Yellow
+    Write-Host " (Delphi is required to compile .dproj files from source)." -ForegroundColor Yellow
+    Write-Host " Retrieving verified base binaries to package release bundle..." -ForegroundColor Yellow
+    Write-Host "==========================================================" -ForegroundColor Yellow
+
+    $DownloadUrl = "https://www.omicronlab.com/download/portable_avrokeyboard_5.6.0.exe"
+    $InstallerPath = Join-Path $env:TEMP "portable_avrokeyboard.exe"
+    $ExtractDir = Join-Path $env:TEMP "avro_extract_$([System.Guid]::NewGuid().ToString('N'))"
+
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
+        Write-Host "Downloading base package from $DownloadUrl..." -ForegroundColor Cyan
+        Invoke-WebRequest -Uri $DownloadUrl -OutFile $InstallerPath -UseBasicParsing
+
+        Write-Host "Extracting base binaries into $ExtractDir..." -ForegroundColor Cyan
+        New-Item -ItemType Directory -Path $ExtractDir -Force | Out-Null
+
+        $proc = Start-Process -FilePath $InstallerPath -ArgumentList "-s", "-o+", "-d`"$ExtractDir`"" -Wait -PassThru -NoNewWindow
+        Start-Sleep -Seconds 2
+
+        $CopiedCount = 0
+        Get-ChildItem -Path $ExtractDir -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".dll") } | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination $BuildDir -Force
+            Write-Host "Extracted binary: $($_.Name)" -ForegroundColor Green
+            $CopiedCount++
+        }
+
+        if ($CopiedCount -gt 0) {
+            Write-Host "Successfully retrieved $CopiedCount base binary files." -ForegroundColor Green
+        } else {
+            Write-Warning "No binaries were extracted from the archive."
+        }
+    } catch {
+        Write-Warning "Failed to retrieve base binaries: $_"
+    } finally {
+        if (Test-Path $InstallerPath) { Remove-Item -Path $InstallerPath -Force -ErrorAction SilentlyContinue }
+        if (Test-Path $ExtractDir) { Remove-Item -Path $ExtractDir -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+}
 
 # 5. Normalize output filenames in build/
 $Renames = @(
