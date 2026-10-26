@@ -1636,9 +1636,10 @@ begin
 
   if StrToInt(TrayHintShowTimes) < NumberOfVisibleHints then
   begin
-    Tray.BalloonHint := 'Avro Keyboard is running here.';
+    Tray.BalloonHint := 'Avro Keyboard is minimized to the system tray.' + #13 + 'Double-click the tray icon to restore the top bar.';
     Tray.BalloonTimeout := 5000;
-    Tray.BalloonTitle := 'Avro Keyboard';
+    Tray.BalloonTitle := 'Avro Keyboard Active';
+    Tray.BalloonFlags := bfInfo;
     Tray.ShowBalloonHint;
     TrayHintShowTimes := IntToStr(StrToInt(TrayHintShowTimes) + 1);
   end;

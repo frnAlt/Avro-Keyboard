@@ -242,9 +242,37 @@ end;
 { =============================================================================== }
 
 procedure TfrmPrevW.MoveWindow(X, Y: Integer);
+const
+  VerticalOffset = 5;
+var
+  TargetTop, TargetLeft: Integer;
+  Mon: TMonitor;
 begin
-  self.Top := Y;
-  self.Left := X;
+  // Position above the text cursor with a 5px offset (Issue #114)
+  TargetTop := Y - self.Height - VerticalOffset;
+  TargetLeft := X;
+
+  // Multi-monitor boundary and DPI clamping (Issue #109)
+  Mon := Screen.MonitorFromPoint(Point(X, Y));
+  if Mon <> nil then
+  begin
+    // If not enough room above the caret, position below the line
+    if TargetTop < Mon.WorkareaRect.Top then
+      TargetTop := Y + VerticalOffset;
+
+    // Ensure preview window does not overflow bottom boundary
+    if TargetTop + self.Height > Mon.WorkareaRect.Bottom then
+      TargetTop := Mon.WorkareaRect.Bottom - self.Height;
+
+    // Ensure preview window stays horizontally within monitor work area
+    if TargetLeft + self.Width > Mon.WorkareaRect.Right then
+      TargetLeft := Mon.WorkareaRect.Right - self.Width;
+    if TargetLeft < Mon.WorkareaRect.Left then
+      TargetLeft := Mon.WorkareaRect.Left;
+  end;
+
+  self.Top := TargetTop;
+  self.Left := TargetLeft;
 end;
 
 { =============================================================================== }
