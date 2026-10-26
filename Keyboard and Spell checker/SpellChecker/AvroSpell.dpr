@@ -32,6 +32,7 @@ uses
   clsFileVersion in '..\Classes\clsFileVersion.pas',
   ufrmSpellOptions in 'ufrmSpellOptions.pas' {frmSpellOptions} ,
   ufrmSpellPopUp in 'ufrmSpellPopUp.pas' {frmSpellPopUp} ,
+  uSpellGoogleSearch in 'uSpellGoogleSearch.pas',
   Forms,
   Classes;
 
@@ -289,6 +290,9 @@ begin
       PhoneticSug.BuildSuggestion(mWrd, PhoneticResult);
       // Suggestion from fuzzy search ("Substitution", "Insertion", "Deletion" errors)
       SearchSuggestion(mWrd, FuzzyResult, 1);
+      // Online suggestion from Google (fast non-blocking / offline-safe)
+      if EnableGoogleSpell = 'YES' then
+        QueryGoogleSuggestions(mWrd, OtherResult);
     end;
 
     // Splitted suggestion  (Words Joined?)

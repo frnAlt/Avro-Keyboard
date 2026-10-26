@@ -81,6 +81,18 @@ object frmSpellOptions: TfrmSpellOptions
     Caption = 'Ignore single characters'
     TabOrder = 1
   end
+  object CheckGoogleSuggestions: TCheckBox
+    Left = 42
+    Top = 171
+    Width = 434
+    Height = 26
+    Margins.Left = 5
+    Margins.Top = 5
+    Margins.Right = 5
+    Margins.Bottom = 5
+    Caption = 'Enable Google online suggestions (hybrid)'
+    TabOrder = 7
+  end
   object CheckBoxFullSuggestion: TCheckBox
     Left = 42
     Top = 203

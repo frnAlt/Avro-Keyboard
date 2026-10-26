@@ -26,6 +26,7 @@ type
   TfrmSpellOptions = class(TForm)
     CheckIgnoreNumber: TCheckBox;
     CheckIgnoreSingle: TCheckBox;
+    CheckGoogleSuggestions: TCheckBox;
     CheckBoxFullSuggestion: TCheckBox;
     CheckIgnoreAncient: TCheckBox;
     CheckIgnoreAssamese: TCheckBox;
@@ -78,6 +79,11 @@ begin
   else
     IgnoreSingle := 'NO';
 
+  if CheckGoogleSuggestions.Checked then
+    EnableGoogleSpell := 'YES'
+  else
+    EnableGoogleSpell := 'NO';
+
   if CheckBoxFullSuggestion.Checked then
     FullSuggestion := 'YES'
   else
@@ -114,6 +120,11 @@ begin
     CheckIgnoreSingle.Checked := True
   else
     CheckIgnoreSingle.Checked := False;
+
+  if EnableGoogleSpell = 'YES' then
+    CheckGoogleSuggestions.Checked := True
+  else
+    CheckGoogleSuggestions.Checked := False;
 
   if FullSuggestion = 'YES' then
     CheckBoxFullSuggestion.Checked := True
