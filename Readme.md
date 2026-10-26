@@ -62,9 +62,19 @@ This compiles `WholeProject.groupproj`, renames binaries, packages `Avro-Keyboar
 ### Continuous Integration & Automated Releases
 Automated GitHub Actions workflow (`.github/workflows/build-release.yml`) builds all targets on Windows runners and automatically publishes versioned release packages when a release tag (e.g. `v5.7.0`) is pushed.
 
+## New Features in This Release
+
+- **macOS Frosted Glass UI Skin:** A modern, translucent floating capsule topbar available in both Light and Dark themes (`macOS Glass.avroskin` and `macOS Glass Dark.avroskin`) with crisp high-DPI icons.
+- **Voice-to-Text (কণ্ঠস্বর / Speech Dictation):** Native speech recognition that streams transcribed Bangla text directly into the focused window at the cursor position (`Ctrl+Shift+V`). Operates online via Google Speech and falls back smoothly offline.
+- **Hybrid Google Spell Checker:** Real-time online suggestion suggestions alongside the local SQLite dictionary with zero typing latency and instant offline fallback.
+- **Bangla Symbols & Emoji Quick Picker:** Fast keyboard and mouse access to common Bangla punctuation (Dari `।`, Double Dari `॥`, Taka `৳`, Hasanta `্`, ZWJ `‍`, ZWNJ `‌`), math symbols, and emojis (`Ctrl+Shift+S`).
+- **Dynamic Caret Tracking & DPI Fixes:** Preview suggestion window now tracks text cursor dynamically across multi-monitor setups and Chromium/Electron apps (resolving Issues #114 and #109).
+- **Automated Headless Compilation & CI/CD:** Complete MSBuild compilation scripts and GitHub Actions workflow for zero-click release creation and portable zip packaging (resolving Issue #98).
+
 ## Notable contributions
 
 - [@JayedAhsan](https://github.com/JayedAhsan) (PR [#32](https://github.com/mugli/Avro-Keyboard/pull/32)) - 3rd party dependencies are no longer necessary to compile the source, can be compiled with the latest free Community Edition of Delphi, and perf improvements.
+- [@frnAlt](https://github.com/frnAlt) & Antigravity AI - Headless CI/CD build scripts, macOS Glass UI skins, Voice-to-Text dictation, Google hybrid spell checker, symbols/emoji picker, caret tracking & multi-monitor DPI fixes.
 
 ## License
 
