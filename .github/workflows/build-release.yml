@@ -25,7 +25,7 @@ on:
         default: false
         type: boolean
       tag_name:
-        description: 'Release Tag Name (e.g. v5.7.0)'
+        description: 'Release Tag Name (e.g. your)'
         required: false
         default: 'v5.7.0'
         type: string
