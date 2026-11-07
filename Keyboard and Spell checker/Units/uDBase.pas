@@ -16,6 +16,7 @@ uses
   SysUtils,
   Generics.Collections,
   Classes,
+  SyncObjs,
   FireDAC.Phys.SQLite,
   Data.DB,
   FireDAC.Stan.Def,
@@ -34,14 +35,21 @@ type
   IntegerArray = LongIntArray;
 
 procedure LoadWordDatabase;
-
 procedure UnloadWordDatabase;
-
 procedure LoadSuffix;
-
 procedure LoadOneDatabase(FileName: string; var Arr: TStringList; var Dict: TDictionary<string, Boolean>);
 
+// Voice Commands & Lexicon Integration
+procedure LoadVoiceCommands;
+function ApplyVoicePunctuationCommands(const InputText: string): string;
+function CheckWordInLexicon(const SpokenWord: string; var CorrectedWord: string): Boolean;
+procedure AddOrUpdateUserLexicon(const SpokenWord, CorrectedWord: string);
+function IsValidBanglaWord(const Word: string): Boolean;
+
 var
+  DBCriticalSection:                 TCriticalSection;
+  VoiceCommandsDict:                 TDictionary<string, string>;
+  VoiceUserLexiconDict:              TDictionary<string, string>;
   FDatabase:                         TSQLiteDatabase;
   FDatabaseLoaded, FDatabaseLoading: Boolean;
   FDPhysSQLiteDriverLink1:           TFDPhysSQLiteDriverLink;
@@ -380,6 +388,17 @@ begin
 
     try
       FDConnection1.Open;
+      try
+        FDConnection1.ExecSQL('PRAGMA journal_mode = WAL;');
+        FDConnection1.ExecSQL('PRAGMA synchronous = NORMAL;');
+        FDConnection1.ExecSQL('CREATE TABLE IF NOT EXISTS VoiceCommands (CommandText TEXT PRIMARY KEY, ReplacementText TEXT NOT NULL);');
+        FDConnection1.ExecSQL('CREATE INDEX IF NOT EXISTS idx_voice_command ON VoiceCommands(CommandText);');
+        FDConnection1.ExecSQL('CREATE TABLE IF NOT EXISTS VoiceUserLexicon (SpokenWord TEXT PRIMARY KEY, CorrectedWord TEXT NOT NULL, Frequency INTEGER DEFAULT 1, LastUsed DATETIME DEFAULT CURRENT_TIMESTAMP);');
+        FDConnection1.ExecSQL('CREATE INDEX IF NOT EXISTS idx_voice_lexicon ON VoiceUserLexicon(SpokenWord);');
+      except
+        // Silently continue if PRAGMA or table creation is restricted
+      end;
+
       FDatabase := TSQLiteDatabase(FDConnection1.CliObj);
 
       try
@@ -434,6 +453,7 @@ begin
         LoadOneDatabase('Khandatta', W_Khandatta, W_Hash_Khandatta);
 
         LoadSuffix;
+        LoadVoiceCommands;
 
         FDatabase.Close;
 
@@ -491,9 +511,232 @@ begin
   {$ENDIF}
 end;
 
+procedure InitDefaultVoiceCommands;
+begin
+  if VoiceCommandsDict = nil then
+    VoiceCommandsDict := TDictionary<string, string>.Create;
+
+  VoiceCommandsDict.AddOrSetValue('দাঁড়ি', '।');
+  VoiceCommandsDict.AddOrSetValue('দাড়ি', '।');
+  VoiceCommandsDict.AddOrSetValue('পূর্ণচ্ছেদ', '।');
+  VoiceCommandsDict.AddOrSetValue('কমা', ',');
+  VoiceCommandsDict.AddOrSetValue('প্রশ্নবোধক', '?');
+  VoiceCommandsDict.AddOrSetValue('প্রশ্নচিহ্ন', '?');
+  VoiceCommandsDict.AddOrSetValue('জিজ্ঞাসাচিহ্ন', '?');
+  VoiceCommandsDict.AddOrSetValue('জিজ্ঞাসা চিহ্ন', '?');
+  VoiceCommandsDict.AddOrSetValue('প্রশ্নবোধক চিহ্ন', '?');
+  VoiceCommandsDict.AddOrSetValue('বিস্ময়চিহ্ন', '!');
+  VoiceCommandsDict.AddOrSetValue('বিস্ময়বোধক', '!');
+  VoiceCommandsDict.AddOrSetValue('বিস্ময়সূচক', '!');
+  VoiceCommandsDict.AddOrSetValue('কোলন', ':');
+  VoiceCommandsDict.AddOrSetValue('ক্লোন', ':');
+  VoiceCommandsDict.AddOrSetValue('সেমিকোলন', ';');
+  VoiceCommandsDict.AddOrSetValue('হাইফেন', '-');
+  VoiceCommandsDict.AddOrSetValue('ড্যাশ', '—');
+  VoiceCommandsDict.AddOrSetValue('নতুন লাইন', sLineBreak);
+  VoiceCommandsDict.AddOrSetValue('নতুন প্যারা', sLineBreak + sLineBreak);
+  VoiceCommandsDict.AddOrSetValue('উদ্ধৃতি চিহ্ন', '"');
+end;
+
+procedure LoadVoiceCommands;
+var
+  Stmt: TSQLiteStatement;
+  CmdText, ReplText: string;
+begin
+  DBCriticalSection.Enter;
+  try
+    InitDefaultVoiceCommands;
+
+    if VoiceUserLexiconDict = nil then
+      VoiceUserLexiconDict := TDictionary<string, string>.Create;
+
+    if FDatabase <> nil then
+    begin
+      try
+        Stmt := TSQLiteStatement.Create(FDatabase);
+        try
+          Stmt.Prepare('SELECT CommandText, ReplacementText FROM VoiceCommands');
+          while Stmt.Fetch do
+          begin
+            CmdText := Stmt.Columns[0].AsString;
+            ReplText := Stmt.Columns[1].AsString;
+            if (CmdText <> '') and (ReplText <> '') then
+              VoiceCommandsDict.AddOrSetValue(CmdText, ReplText);
+          end;
+        finally
+          Stmt.Free;
+        end;
+
+        Stmt := TSQLiteStatement.Create(FDatabase);
+        try
+          Stmt.Prepare('SELECT SpokenWord, CorrectedWord FROM VoiceUserLexicon');
+          while Stmt.Fetch do
+          begin
+            CmdText := Stmt.Columns[0].AsString;
+            ReplText := Stmt.Columns[1].AsString;
+            if (CmdText <> '') and (ReplText <> '') then
+              VoiceUserLexiconDict.AddOrSetValue(CmdText, ReplText);
+          end;
+        finally
+          Stmt.Free;
+        end;
+      except
+        // Fall back to default memory dictionaries
+      end;
+    end;
+  finally
+    DBCriticalSection.Leave;
+  end;
+end;
+
+function ApplyVoicePunctuationCommands(const InputText: string): string;
+var
+  Pair: TPair<string, string>;
+  S: string;
+begin
+  S := InputText;
+  if (S = '') or (VoiceCommandsDict = nil) then
+  begin
+    Result := S;
+    Exit;
+  end;
+
+  DBCriticalSection.Enter;
+  try
+    for Pair in VoiceCommandsDict do
+    begin
+      // Replace with space prefix first, then raw token
+      S := StringReplace(S, ' ' + Pair.Key, Pair.Value, [rfReplaceAll, rfIgnoreCase]);
+      S := StringReplace(S, Pair.Key, Pair.Value, [rfReplaceAll, rfIgnoreCase]);
+    end;
+  finally
+    DBCriticalSection.Leave;
+  end;
+
+  // Normalize spacing around punctuation
+  S := StringReplace(S, ' ।', '।', [rfReplaceAll]);
+  S := StringReplace(S, ' ,', ',', [rfReplaceAll]);
+  S := StringReplace(S, ' ?', '?', [rfReplaceAll]);
+  S := StringReplace(S, ' !', '!', [rfReplaceAll]);
+  S := StringReplace(S, ' :', ':', [rfReplaceAll]);
+  S := StringReplace(S, ' ;', ';', [rfReplaceAll]);
+
+  Result := S;
+end;
+
+function CheckWordInLexicon(const SpokenWord: string; var CorrectedWord: string): Boolean;
+var
+  W: string;
+begin
+  Result := False;
+  W := Trim(SpokenWord);
+  if (W = '') or (VoiceUserLexiconDict = nil) then Exit;
+
+  DBCriticalSection.Enter;
+  try
+    if VoiceUserLexiconDict.TryGetValue(W, CorrectedWord) then
+      Result := True;
+  finally
+    DBCriticalSection.Leave;
+  end;
+end;
+
+procedure AddOrUpdateUserLexicon(const SpokenWord, CorrectedWord: string);
+var
+  SW, CW: string;
+begin
+  SW := Trim(SpokenWord);
+  CW := Trim(CorrectedWord);
+  if (SW = '') or (CW = '') then Exit;
+
+  DBCriticalSection.Enter;
+  try
+    if VoiceUserLexiconDict = nil then
+      VoiceUserLexiconDict := TDictionary<string, string>.Create;
+    VoiceUserLexiconDict.AddOrSetValue(SW, CW);
+  finally
+    DBCriticalSection.Leave;
+  end;
+end;
+
+function IsValidBanglaWord(const Word: string): Boolean;
+var
+  W: string;
+  FirstChar: Char;
+begin
+  Result := False;
+  W := Trim(Word);
+  if W = '' then Exit;
+
+  DBCriticalSection.Enter;
+  try
+    if (VoiceUserLexiconDict <> nil) and VoiceUserLexiconDict.ContainsKey(W) then
+    begin
+      Result := True;
+      Exit;
+    end;
+
+    FirstChar := W[1];
+    case FirstChar of
+      'অ': Result := (W_Hash_A <> nil) and W_Hash_A.ContainsKey(W);
+      'আ': Result := (W_Hash_AA <> nil) and W_Hash_AA.ContainsKey(W);
+      'ই': Result := (W_Hash_I <> nil) and W_Hash_I.ContainsKey(W);
+      'ঈ': Result := (W_Hash_II <> nil) and W_Hash_II.ContainsKey(W);
+      'উ': Result := (W_Hash_U <> nil) and W_Hash_U.ContainsKey(W);
+      'ঊ': Result := (W_Hash_UU <> nil) and W_Hash_UU.ContainsKey(W);
+      'ঋ': Result := (W_Hash_RRI <> nil) and W_Hash_RRI.ContainsKey(W);
+      'এ': Result := (W_Hash_E <> nil) and W_Hash_E.ContainsKey(W);
+      'ঐ': Result := (W_Hash_OI <> nil) and W_Hash_OI.ContainsKey(W);
+      'ও': Result := (W_Hash_O <> nil) and W_Hash_O.ContainsKey(W);
+      'ঔ': Result := (W_Hash_OU <> nil) and W_Hash_OU.ContainsKey(W);
+      'ক': Result := (W_Hash_K <> nil) and W_Hash_K.ContainsKey(W);
+      'খ': Result := (W_Hash_Kh <> nil) and W_Hash_Kh.ContainsKey(W);
+      'গ': Result := (W_Hash_G <> nil) and W_Hash_G.ContainsKey(W);
+      'ঘ': Result := (W_Hash_Gh <> nil) and W_Hash_Gh.ContainsKey(W);
+      'ঙ': Result := (W_Hash_NGA <> nil) and W_Hash_NGA.ContainsKey(W);
+      'চ': Result := (W_Hash_C <> nil) and W_Hash_C.ContainsKey(W);
+      'ছ': Result := (W_Hash_CH <> nil) and W_Hash_CH.ContainsKey(W);
+      'জ': Result := (W_Hash_J <> nil) and W_Hash_J.ContainsKey(W);
+      'ঝ': Result := (W_Hash_Jh <> nil) and W_Hash_Jh.ContainsKey(W);
+      'ঞ': Result := (W_Hash_NYA <> nil) and W_Hash_NYA.ContainsKey(W);
+      'ট': Result := (W_Hash_Tt <> nil) and W_Hash_Tt.ContainsKey(W);
+      'ঠ': Result := (W_Hash_Tth <> nil) and W_Hash_Tth.ContainsKey(W);
+      'ড': Result := (W_Hash_Dd <> nil) and W_Hash_Dd.ContainsKey(W);
+      'ঢ': Result := (W_Hash_Ddh <> nil) and W_Hash_Ddh.ContainsKey(W);
+      'ণ': Result := (W_Hash_Nn <> nil) and W_Hash_Nn.ContainsKey(W);
+      'ত': Result := (W_Hash_T <> nil) and W_Hash_T.ContainsKey(W);
+      'থ': Result := (W_Hash_Th <> nil) and W_Hash_Th.ContainsKey(W);
+      'দ': Result := (W_Hash_D <> nil) and W_Hash_D.ContainsKey(W);
+      'ধ': Result := (W_Hash_Dh <> nil) and W_Hash_Dh.ContainsKey(W);
+      'ন': Result := (W_Hash_N <> nil) and W_Hash_N.ContainsKey(W);
+      'প': Result := (W_Hash_P <> nil) and W_Hash_P.ContainsKey(W);
+      'ফ': Result := (W_Hash_Ph <> nil) and W_Hash_Ph.ContainsKey(W);
+      'ব': Result := (W_Hash_B <> nil) and W_Hash_B.ContainsKey(W);
+      'ভ': Result := (W_Hash_BH <> nil) and W_Hash_BH.ContainsKey(W);
+      'ম': Result := (W_Hash_M <> nil) and W_Hash_M.ContainsKey(W);
+      'য': Result := (W_Hash_Y <> nil) and W_Hash_Y.ContainsKey(W);
+      'র': Result := (W_Hash_R <> nil) and W_Hash_R.ContainsKey(W);
+      'ল': Result := (W_Hash_L <> nil) and W_Hash_L.ContainsKey(W);
+      'শ': Result := (W_Hash_Sh <> nil) and W_Hash_Sh.ContainsKey(W);
+      'ষ': Result := (W_Hash_Ss <> nil) and W_Hash_Ss.ContainsKey(W);
+      'স': Result := (W_Hash_S <> nil) and W_Hash_S.ContainsKey(W);
+      'হ': Result := (W_Hash_H <> nil) and W_Hash_H.ContainsKey(W);
+      'ড়': Result := (W_Hash_Rr <> nil) and W_Hash_Rr.ContainsKey(W);
+      'ঢ়': Result := (W_Hash_Rrh <> nil) and W_Hash_Rrh.ContainsKey(W);
+      'য়': Result := (W_Hash_Z <> nil) and W_Hash_Z.ContainsKey(W);
+      'ৎ': Result := (W_Hash_Khandatta <> nil) and W_Hash_Khandatta.ContainsKey(W);
+    end;
+  finally
+    DBCriticalSection.Leave;
+  end;
+end;
+
 // ------------------------------------------------------------------------------
 
 initialization
+
+DBCriticalSection := TCriticalSection.Create;
+InitDefaultVoiceCommands;
 
 { Initialize the DISQLite3 library prior to using any other DISQLite3
   functionality. See also sqlite3_shutdown() below. }
@@ -506,5 +749,12 @@ finalization
 { Deallocate any resources that were allocated by
   sqlite3_initialize() above. }
 sqlite3_shutdown;
+
+if VoiceCommandsDict <> nil then
+  FreeAndNil(VoiceCommandsDict);
+if VoiceUserLexiconDict <> nil then
+  FreeAndNil(VoiceUserLexiconDict);
+if DBCriticalSection <> nil then
+  FreeAndNil(DBCriticalSection);
 
 end.

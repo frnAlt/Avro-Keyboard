@@ -7,7 +7,7 @@ param(
     [string]$Configuration = "Release",
     [string]$Platform = "Win32",
     [switch]$SkipZip,
-    [string]$Version = "5.7.0"
+    [string]$Version = "5.8.0"
 )
 
 $ErrorActionPreference = "Stop"

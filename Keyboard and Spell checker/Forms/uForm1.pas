@@ -374,6 +374,10 @@ type
       procedure HandleThemes;
 
       procedure WMCopyData(var Msg: TWMCopyData); message WM_COPYDATA;
+      procedure WMAvroToggleMode(var Msg: TMessage); message WM_AVRO_TOGGLE_MODE;
+      procedure WMAvroToggleEncoding(var Msg: TMessage); message WM_AVRO_TOGGLE_ENCODING;
+      procedure WMAvroSpellCheck(var Msg: TMessage); message WM_AVRO_SPELL_CHECK;
+      procedure WMAvroVoiceToggle(var Msg: TMessage); message WM_AVRO_VOICE_TOGGLE;
     public
       { Public declarations }
       KeyboardModeChanged: Boolean;
@@ -394,6 +398,8 @@ type
       procedure TrimAppMemorySize;
       procedure Initmenu;
       procedure ToggleOutputEncoding;
+      procedure ResetKeyBuffer;
+      procedure ToggleVoiceDictation;
     protected
       procedure CreateParams(var Params: TCreateParams); override;
   end;
@@ -1685,6 +1691,44 @@ end;
 procedure TAvroMainForm1.Spellcheck1Click(Sender: TObject);
 begin
   Execute_Something(ExtractFilePath(Application.ExeName) + 'Avro Spell checker.exe');
+end;
+
+procedure TAvroMainForm1.ResetKeyBuffer;
+begin
+  if Assigned(KeyLayout) then
+    KeyLayout.ResetDeadKey;
+end;
+
+procedure TAvroMainForm1.ToggleVoiceDictation;
+begin
+  if (frmVoiceDictate <> nil) and frmVoiceDictate.Visible then
+    frmVoiceDictate.StopDictation
+  else
+  begin
+    if frmVoiceDictate = nil then
+      Application.CreateForm(TfrmVoiceDictate, frmVoiceDictate);
+    frmVoiceDictate.StartDictation;
+  end;
+end;
+
+procedure TAvroMainForm1.WMAvroToggleMode(var Msg: TMessage);
+begin
+  ToggleMode;
+end;
+
+procedure TAvroMainForm1.WMAvroToggleEncoding(var Msg: TMessage);
+begin
+  ToggleOutputEncoding;
+end;
+
+procedure TAvroMainForm1.WMAvroSpellCheck(var Msg: TMessage);
+begin
+  Spellcheck1Click(nil);
+end;
+
+procedure TAvroMainForm1.WMAvroVoiceToggle(var Msg: TMessage);
+begin
+  ToggleVoiceDictation;
 end;
 
 { =============================================================================== }

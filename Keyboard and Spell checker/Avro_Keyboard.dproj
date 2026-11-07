@@ -212,6 +212,8 @@
         </DCCReference>
         <DCCReference Include="Units\DebugLog.pas"/>
         <DCCReference Include="Units\WindowsDarkMode.pas"/>
+        <DCCReference Include="Units\uGlassmorphism.pas"/>
+        <DCCReference Include="Units\uOfflineSTTWrapper.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

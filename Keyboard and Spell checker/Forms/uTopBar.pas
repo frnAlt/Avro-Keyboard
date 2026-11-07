@@ -191,9 +191,19 @@ type
 
       procedure WMDROPFILES(var msg: TWMDropFiles); message WM_DROPFILES;
       procedure WMDpiChanged(var Message: TWMDpi); message WM_DPICHANGED;
+      procedure WMMouseActivate(var Message: TMessage); message WM_MOUSEACTIVATE;
+      procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
+
+      procedure ExpandTopBar;
+      procedure CollapseTopBar;
 
     public
       { Public declarations }
+      FVoiceGlowLevel: Single;
+      FIsCollapsed: Boolean;
+      FExpandedWidth: Integer;
+      FIdleSeconds: Integer;
+
       BMP_AppIcon:      TBitmap;
       BMP_AppIcon_Over: TBitmap;
       BMP_AppIcon_Down: TBitmap;
@@ -238,6 +248,8 @@ type
       procedure ApplySkin;
       procedure SetButtonModeState(ST: ButtonState);
       procedure InitHints;
+      procedure SetVoiceGlow(Level: Single);
+      procedure RefreshGlassStyle;
     protected
       procedure CreateParams(var Params: TCreateParams); override;
 
@@ -257,7 +269,9 @@ uses
   uRegistrySettings,
   uWindowHandlers,
   KeyboardLayoutLoader,
-  DebugLog;
+  DebugLog,
+  uGlassmorphism,
+  WindowsDarkMode;
 
 { =============================================================================== }
 
@@ -274,9 +288,11 @@ begin
   NewRect := message.ScaledRect^;
 
   // Reposition window without resizing
-  SetWindowPos(Handle, 0, NewRect.Left, NewRect.Top, Width, // Keep current width
-    Height,                                                 // Keep current height
+  SetWindowPos(Handle, 0, NewRect.Left, NewRect.Top, Width,
+    Height,
     SWP_NOZORDER or SWP_NOACTIVATE or SWP_NOSIZE);
+
+  RefreshGlassStyle;
 end;
 
 { =============================================================================== }
@@ -425,6 +441,15 @@ begin
 
   DragAcceptFiles(Handle, True);
 
+  DoubleBuffered := True;
+  FIsCollapsed := False;
+  FExpandedWidth := Width;
+  FIdleSeconds := 0;
+  FVoiceGlowLevel := 0.0;
+
+  MakeNeverActiveWindow(Handle);
+  RefreshGlassStyle;
+
   Self.Top := 0;
   HintTimer.Enabled := True;
 end;
@@ -445,6 +470,7 @@ end;
 procedure TTopBar.FormShow(Sender: TObject);
 begin
   ApplySkin;
+  RefreshGlassStyle;
 
   TransparencyTimer.Enabled := True;
 
@@ -672,13 +698,26 @@ begin
     else
     begin
       if (X < 0) or (Y < 0) then
-        ThisResult := False
+      begin
+        ThisResult := False;
+        Inc(FIdleSeconds);
+        if (FIdleSeconds >= 10) and not FIsCollapsed then
+          CollapseTopBar;
+      end
       else if (X > Self.Width) or (Y > Self.Height) then
-        ThisResult := False
+      begin
+        ThisResult := False;
+        Inc(FIdleSeconds);
+        if (FIdleSeconds >= 10) and not FIsCollapsed then
+          CollapseTopBar;
+      end
       else
       begin
         ThisResult := True;
         EnableTime := now;
+        FIdleSeconds := 0;
+        if FIsCollapsed then
+          ExpandTopBar;
       end;
     end;
   end;
@@ -1201,9 +1240,66 @@ end;
 procedure TTopBar.CreateParams(var Params: TCreateParams);
 begin
   inherited CreateParams(Params);
-  Params.ExStyle := Params.ExStyle or WS_EX_TOPMOST;
-  Params.ExStyle := Params.ExStyle or WS_EX_TOOLWINDOW and not WS_EX_APPWINDOW;
+  Params.ExStyle := (Params.ExStyle or WS_EX_TOPMOST or WS_EX_TOOLWINDOW or WS_EX_NOACTIVATE) and not WS_EX_APPWINDOW;
   Params.WndParent := GetDesktopwindow;
+end;
+
+procedure TTopBar.WMMouseActivate(var Message: TMessage);
+begin
+  Message.Result := MA_NOACTIVATE;
+end;
+
+procedure TTopBar.WMPaint(var Message: TWMPaint);
+var
+  DC: HDC;
+  PS: TPaintStruct;
+  R: TRect;
+begin
+  DC := BeginPaint(Handle, PS);
+  try
+    Canvas.Handle := DC;
+    R := ClientRect;
+    DrawGlassmorphismBorder(Canvas, R, DarkModeIsEnabled, FVoiceGlowLevel);
+  finally
+    Canvas.Handle := 0;
+    EndPaint(Handle, PS);
+  end;
+  inherited;
+end;
+
+procedure TTopBar.ExpandTopBar;
+begin
+  if not FIsCollapsed then Exit;
+  FIsCollapsed := False;
+  if FExpandedWidth > 64 then
+    Width := FExpandedWidth;
+  RefreshGlassStyle;
+end;
+
+procedure TTopBar.CollapseTopBar;
+begin
+  if FIsCollapsed then Exit;
+  FExpandedWidth := Width;
+  FIsCollapsed := True;
+  Width := 56;
+  RefreshGlassStyle;
+end;
+
+procedure TTopBar.SetVoiceGlow(Level: Single);
+begin
+  if Abs(FVoiceGlowLevel - Level) > 0.05 then
+  begin
+    FVoiceGlowLevel := Level;
+    Invalidate;
+  end;
+end;
+
+procedure TTopBar.RefreshGlassStyle;
+begin
+  EnableWindowAcrylicBlur(Handle, DarkModeIsEnabled, 150);
+  EnableWindowRoundedCorners(Handle);
+  ApplyPillWindowRegion(Handle, Width, Height);
+  Invalidate;
 end;
 
 { =============================================================================== }

@@ -62,7 +62,9 @@ uses
   DebugLog in 'Units\DebugLog.pas',
   Vcl.Themes,
   Vcl.Styles,
-  WindowsDarkMode in 'Units\WindowsDarkMode.pas';
+  WindowsDarkMode in 'Units\WindowsDarkMode.pas',
+  uGlassmorphism in 'Units\uGlassmorphism.pas',
+  uOfflineSTTWrapper in 'Units\uOfflineSTTWrapper.pas';
 
 var
   Mutex: THandle;

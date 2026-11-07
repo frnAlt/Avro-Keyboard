@@ -33,6 +33,8 @@ type
     FVoiceEngine: TAvroVoiceEngine;
     FPulseState: Boolean;
     procedure OnStateChange(State: TVoiceState; const StatusMessage: string);
+    procedure OnAudioLevel(Level: Single);
+    procedure WMMouseActivate(var Message: TMessage); message WM_MOUSEACTIVATE;
     procedure CreateParams(var Params: TCreateParams); override;
   public
     procedure StartDictation;
@@ -45,7 +47,10 @@ var
 implementation
 
 uses
-  uWindowHandlers;
+  uWindowHandlers,
+  uTopBar,
+  uGlassmorphism,
+  WindowsDarkMode;
 
 {$R *.dfm}
 
@@ -53,15 +58,32 @@ procedure TfrmVoiceDictate.CreateParams(var Params: TCreateParams);
 begin
   inherited CreateParams(Params);
   // Do not steal focus from current active application
-  Params.ExStyle := Params.ExStyle or WS_EX_NOACTIVATE or WS_EX_TOPMOST;
+  Params.ExStyle := (Params.ExStyle or WS_EX_NOACTIVATE or WS_EX_TOPMOST) and not WS_EX_APPWINDOW;
+  Params.WndParent := GetDesktopWindow;
+end;
+
+procedure TfrmVoiceDictate.WMMouseActivate(var Message: TMessage);
+begin
+  Message.Result := MA_NOACTIVATE;
 end;
 
 procedure TfrmVoiceDictate.FormCreate(Sender: TObject);
 begin
   FVoiceEngine := TAvroVoiceEngine.Create;
   FVoiceEngine.OnStateChanged := OnStateChange;
+  FVoiceEngine.OnAudioLevel := OnAudioLevel;
   FPulseState := False;
   MakeNeverActiveWindow(Self.Handle);
+
+  EnableWindowAcrylicBlur(Self.Handle, DarkModeIsEnabled, 160);
+  EnableWindowRoundedCorners(Self.Handle);
+  ApplyPillWindowRegion(Self.Handle, Width, Height);
+end;
+
+procedure TfrmVoiceDictate.OnAudioLevel(Level: Single);
+begin
+  if Assigned(TopBar) then
+    TopBar.SetVoiceGlow(Level);
 end;
 
 procedure TfrmVoiceDictate.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -95,16 +117,22 @@ begin
       begin
         lblMic.Font.Color := clRed;
         tmrPulse.Enabled := True;
+        if Assigned(TopBar) then
+          TopBar.SetVoiceGlow(0.2);
       end;
     vsTranscribing:
       begin
         lblMic.Font.Color := clBlue;
         tmrPulse.Enabled := False;
+        if Assigned(TopBar) then
+          TopBar.SetVoiceGlow(0.0);
       end;
     vsIdle, vsError:
       begin
         lblMic.Font.Color := clGray;
         tmrPulse.Enabled := False;
+        if Assigned(TopBar) then
+          TopBar.SetVoiceGlow(0.0);
       end;
   end;
 end;

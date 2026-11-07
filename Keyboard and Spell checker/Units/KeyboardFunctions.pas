@@ -17,6 +17,8 @@ uses
 
 procedure Backspace(KeyRepeat: Integer = 1);
 procedure SendKey_Char(const Keytext: string);
+procedure SendUnicodeString(const Keytext: string);
+procedure ResetAllKeyBuffers;
 procedure SendKey_SendInput(const bKey: Integer);
 procedure SendInput_UP(const bKey: Integer);
 procedure SendInput_Down(const bKey: Integer);
@@ -37,7 +39,8 @@ function IsIgnorableModifierKey(const KeyCode: Integer): Boolean;
 implementation
 
 uses
-  DebugLog;
+  DebugLog,
+  uForm1;
 
 { =============================================================================== }
 
@@ -198,6 +201,24 @@ begin
     SendKey_SendInput(VK_NONAME); // Hack: Unused key to try to avoid key buffering issue
   end;
 
+end;
+
+{ =============================================================================== }
+
+procedure ResetAllKeyBuffers;
+begin
+  if Assigned(AvroMainForm1) then
+    AvroMainForm1.ResetKeyBuffer;
+end;
+
+{ =============================================================================== }
+
+procedure SendUnicodeString(const Keytext: string);
+begin
+  if Keytext = '' then Exit;
+  ResetAllKeyBuffers;
+  SendKey_Char(Keytext);
+  ResetAllKeyBuffers;
 end;
 
 { =============================================================================== }
