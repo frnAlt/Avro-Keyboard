@@ -217,6 +217,7 @@
         <DCCReference Include="Units\WindowsDarkMode.pas"/>
         <DCCReference Include="Units\uGlassmorphism.pas"/>
         <DCCReference Include="Units\uOfflineSTTWrapper.pas"/>
+        <DCCReference Include="Units\uModernPhoneticEngine.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

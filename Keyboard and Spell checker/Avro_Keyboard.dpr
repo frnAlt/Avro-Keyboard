@@ -66,7 +66,8 @@ uses
   uGlassmorphism in 'Units\uGlassmorphism.pas',
   uOfflineSTTWrapper in 'Units\uOfflineSTTWrapper.pas',
   ufrmVoiceDictate in 'Forms\ufrmVoiceDictate.pas' {frmVoiceDictate},
-  ufrmTranslator in 'Forms\ufrmTranslator.pas' {frmTranslator};
+  ufrmTranslator in 'Forms\ufrmTranslator.pas' {frmTranslator},
+  uModernPhoneticEngine in 'Units\uModernPhoneticEngine.pas';
 
 var
   Mutex: THandle;

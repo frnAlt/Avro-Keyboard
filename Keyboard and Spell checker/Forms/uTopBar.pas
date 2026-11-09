@@ -271,7 +271,8 @@ uses
   KeyboardLayoutLoader,
   DebugLog,
   uGlassmorphism,
-  WindowsDarkMode;
+  WindowsDarkMode,
+  ufrmPrevW;
 
 { =============================================================================== }
 
@@ -336,6 +337,8 @@ begin
   ImgButtonHelp.Picture.Bitmap.Assign(BMP_ButtonHelp);
   ImgButtonMinimize.Picture.Bitmap.Assign(BMP_ButtonMinimize);
 
+  if Assigned(frmPrevW) then
+    frmPrevW.RefreshGlassStyle;
 end;
 
 { =============================================================================== }
@@ -1298,6 +1301,8 @@ begin
   EnableWindowAcrylicBlur(Handle, DarkModeIsEnabled, 150);
   if not EnableWindowRoundedCorners(Handle) then
     ApplyPillWindowRegion(Handle, Width, Height);
+  if Assigned(frmPrevW) then
+    frmPrevW.RefreshGlassStyle;
   Invalidate;
 end;
 

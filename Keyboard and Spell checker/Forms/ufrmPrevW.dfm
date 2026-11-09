@@ -62,8 +62,12 @@ object frmPrevW: TfrmPrevW
     0000000000000000000000000000000000000000000000000000000000000000
     000000000000000000000000000000000000000000000000000000000000}
   Position = poDesigned
+  DoubleBuffered = True
   OnClose = FormClose
   OnCreate = FormCreate
+  OnMouseDown = FormMouseDown
+  OnMouseMove = FormMouseMove
+  OnMouseUp = FormMouseUp
   PixelsPerInch = 144
   TextHeight = 21
   object Shape1: TShape
