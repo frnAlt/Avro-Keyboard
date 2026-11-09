@@ -3,6 +3,22 @@ name: Build & Release Avro Keyboard
 on:
   workflow_dispatch:
     inputs:
+      version_bump:
+        description: 'Version Bump Strategy'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - 'auto'
+          - 'patch'
+          - 'minor'
+          - 'major'
+          - 'custom'
+      tag_name:
+        description: 'Custom Tag / Version (used if version_bump is custom, e.g. v5.8.0)'
+        required: false
+        default: ''
+        type: string
       configuration:
         description: 'Build Configuration'
         required: true
@@ -22,13 +38,11 @@ on:
       publish_release:
         description: 'Publish as GitHub Release'
         required: false
-        default: false
+        default: true
         type: boolean
-      tag_name:
-        description: 'Release Tag Name (e.g. your)'
-        required: false
-        default: 'v5.8.0'
-        type: string
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -42,40 +56,141 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
+
+      - name: Auto-Calculate & Bump Version
+        id: version_step
+        shell: powershell
+        run: |
+          git fetch --tags --force
+          $bumpStrategy = "${{ inputs.version_bump || 'auto' }}"
+          $customTag = "${{ inputs.tag_name || '' }}"
+          $refName = "${{ github.ref_name }}"
+          $isTagPush = "${{ startsWith(github.ref, 'refs/tags/v') }}"
+
+          Write-Host "Determining release version (Strategy: $bumpStrategy, Ref: $refName)..."
+
+          $targetTag = ""
+          if ($isTagPush -eq "true" -and $refName -ne "") {
+              $targetTag = $refName
+          } elseif ($bumpStrategy -eq "custom" -and $customTag -ne "") {
+              if ($customTag.StartsWith("v")) { $targetTag = $customTag } else { $targetTag = "v$customTag" }
+          } else {
+              # Query all existing tags
+              $tagList = git tag -l "v*" | Where-Object { $_ -match '^v?\d+\.\d+\.\d+' }
+              $versions = @()
+              foreach ($t in $tagList) {
+                  $clean = $t -replace '^v',''
+                  try {
+                      $vObj = [version]$clean
+                      $versions += $vObj
+                  } catch {}
+              }
+
+              if ($versions.Count -gt 0) {
+                  $latest = ($versions | Sort-Object)[-1]
+                  Write-Host "Latest existing git tag: v$($latest.ToString())"
+                  $maj = $latest.Major
+                  $min = $latest.Minor
+                  $pat = $latest.Build
+                  if ($pat -lt 0) { $pat = 0 }
+
+                  if ($bumpStrategy -eq "major") {
+                      $targetTag = "v$($maj + 1).0.0"
+                  } elseif ($bumpStrategy -eq "minor") {
+                      $targetTag = "v$($maj).$($min + 1).0"
+                  } elseif ($bumpStrategy -eq "patch") {
+                      $targetTag = "v$($maj).$($min).$($pat + 1)"
+                  } else { # auto bump
+                      if ($maj -eq 5 -and $min -lt 8) {
+                          $targetTag = "v5.8.0"
+                      } else {
+                          $targetTag = "v$($maj).$($min).$($pat + 1)"
+                      }
+                  }
+              } else {
+                  $targetTag = "v5.8.0"
+              }
+          }
+
+          $cleanVer = $targetTag -replace '^v',''
+          Write-Host "Computed release target: $targetTag (Version: $cleanVer)"
+
+          # Set outputs for downstream steps
+          "tag_name=$targetTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "version=$cleanVer" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+          # Save to local VERSION.txt
+          Set-Content -Path "VERSION.txt" -Value $cleanVer -Encoding UTF8
+
+          # Update version in build-release.ps1
+          $ps1File = "build-release.ps1"
+          if (Test-Path $ps1File) {
+              (Get-Content $ps1File) -replace '\[string\]\$Version = ".*"', "[string]`$Version = `"$cleanVer`"" | Set-Content $ps1File
+          }
+
+          # Update version in Avro_Keyboard.dproj
+          $dprojFile = "Keyboard and Spell checker\Avro_Keyboard.dproj"
+          if (Test-Path $dprojFile) {
+              (Get-Content $dprojFile) -replace 'FileVersion=\d+\.\d+\.\d+\.\d+;', "FileVersion=$cleanVer.0;" `
+                                      -replace 'ProductVersion=\d+\.\d+\.\d+\.\d+;', "ProductVersion=$cleanVer.0;" | Set-Content $dprojFile
+          }
 
       - name: Execute Headless Compilation & Packaging
         shell: powershell
         run: |
           $config = "${{ inputs.configuration || 'Release' }}"
           $platform = "${{ inputs.platform || 'Win32' }}"
-          Write-Host "Triggering Avro Keyboard build pipeline ($config | $platform)..."
-          .\build-release.ps1 -Configuration $config -Platform $platform
+          $ver = "${{ steps.version_step.outputs.version }}"
+          Write-Host "Triggering Avro Keyboard build pipeline ($config | $platform | v$ver)..."
+          .\build-release.ps1 -Configuration $config -Platform $platform -Version $ver
+
+      - name: Tag Release in Git Repository
+        if: ${{ inputs.publish_release != false || startsWith(github.ref, 'refs/tags/v') }}
+        shell: powershell
+        run: |
+          $tagName = "${{ steps.version_step.outputs.tag_name }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          $tagExists = git tag -l $tagName
+          if (-not $tagExists) {
+              Write-Host "Creating and pushing git tag: $tagName"
+              git tag -a $tagName -m "Release $tagName"
+              git push origin $tagName
+          } else {
+              Write-Host "Tag $tagName is already registered on remote."
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Avro-Keyboard-Binaries
+          name: Avro-Keyboard-Binaries-${{ steps.version_step.outputs.tag_name }}
           path: |
             build/*.exe
             build/*.dll
             build/*.zip
             build/SHA256SUMS.txt
+            VERSION.txt
           if-no-files-found: warn
 
       - name: Publish GitHub Release
-        if: ${{ inputs.publish_release == true || startsWith(github.ref, 'refs/tags/v') }}
+        if: ${{ inputs.publish_release != false || startsWith(github.ref, 'refs/tags/v') }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag_name || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v5.8.0' }}
-          name: Avro Keyboard ${{ inputs.tag_name || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v5.8.0' }}
+          tag_name: ${{ steps.version_step.outputs.tag_name }}
+          name: Avro Keyboard ${{ steps.version_step.outputs.tag_name }}
           target_commitish: ${{ github.sha }}
           body_path: RELEASE_NOTES.md
           files: |
             build/*.zip
+            build/*.exe
             build/SHA256SUMS.txt
+            VERSION.txt
           draft: false
           prerelease: false
           generate_release_notes: true

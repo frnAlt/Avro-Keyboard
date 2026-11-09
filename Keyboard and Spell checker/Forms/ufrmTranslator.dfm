@@ -19,6 +19,7 @@ object frmTranslator: TfrmTranslator
   OnClose = FormClose
   OnCreate = FormCreate
   OnKeyDown = FormKeyDown
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 15
   object lblHeader: TLabel
@@ -120,6 +121,7 @@ object frmTranslator: TfrmTranslator
     ParentFont = False
     ScrollBars = ssVertical
     TabOrder = 3
+    OnChange = memoSourceChange
   end
   object memoTarget: TMemo
     Left = 14
@@ -187,5 +189,12 @@ object frmTranslator: TfrmTranslator
     Caption = 'Clear'
     TabOrder = 9
     OnClick = btnClearClick
+  end
+  object tmrDebounce: TTimer
+    Enabled = False
+    Interval = 500
+    OnTimer = tmrDebounceTimer
+    Left = 24
+    Top = 10
   end
 end

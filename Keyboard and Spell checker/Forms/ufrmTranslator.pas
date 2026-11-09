@@ -23,20 +23,22 @@ uses
   StdCtrls,
   ExtCtrls,
   Clipbrd,
-  WinInet;
+  WinInet,
+  ComObj;
 
 type
   TTranslationThread = class(TThread)
   private
-    FSourceText: string;
-    FSourceLang: string;
-    FTargetLang: string;
-    FResultText: string;
+    FSourceText:   string;
+    FSourceLang:   string;
+    FTargetLang:   string;
+    FResultText:   string;
     FErrorMessage: string;
-    FSuccess: Boolean;
-    FOnComplete: TNotifyEvent;
+    FSuccess:      Boolean;
+    FOnComplete:   TNotifyEvent;
     function HttpGet(const Url: string): string;
-    function GoogleTranslate(const Text, SL, TL: string): string;
+    function GoogleTranslateFast(const Text, SL, TL: string): string;
+    function GoogleTranslatePrimary(const Text, SL, TL: string): string;
     function MyMemoryTranslate(const Text, SL, TL: string): string;
     function UrlEncode(const S: string): string;
     function DecodeJsonString(const S: string): string;
@@ -44,9 +46,9 @@ type
     procedure Execute; override;
   public
     constructor Create(const Text, SL, TL: string; OnComplete: TNotifyEvent);
-    property ResultText: string read FResultText;
+    property ResultText:   string read FResultText;
     property ErrorMessage: string read FErrorMessage;
-    property Success: Boolean read FSuccess;
+    property Success:      Boolean read FSuccess;
   end;
 
   TfrmTranslator = class(TForm)
@@ -62,15 +64,19 @@ type
     btnInsert: TButton;
     btnSpeak: TButton;
     btnClear: TButton;
+    tmrDebounce: TTimer;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure FormShow(Sender: TObject);
     procedure btnSwapClick(Sender: TObject);
     procedure btnTranslateClick(Sender: TObject);
     procedure btnCopyClick(Sender: TObject);
     procedure btnInsertClick(Sender: TObject);
     procedure btnSpeakClick(Sender: TObject);
     procedure btnClearClick(Sender: TObject);
+    procedure memoSourceChange(Sender: TObject);
+    procedure tmrDebounceTimer(Sender: TObject);
   private
     FWorkerThread: TTranslationThread;
     function GetLangCode(const LangName: string; IsSource: Boolean): string;
@@ -94,6 +100,10 @@ uses
   ufrmVoiceDictate;
 
 {$R *.dfm}
+
+const
+  CHROME_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+                      '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 { TTranslationThread }
 
@@ -178,16 +188,25 @@ end;
 function TTranslationThread.HttpGet(const Url: string): string;
 var
   hSession, hURL: HINTERNET;
-  Buffer: array[0..4095] of Byte;
+  Buffer: array[0..8191] of Byte;
   BytesRead: DWORD;
   RawBytes: TBytes;
   TotalBytes: Integer;
+  TimeoutMs: DWORD;
+  Headers: string;
 begin
   Result := '';
-  hSession := InternetOpen('Avro-Translator/5.8', INTERNET_OPEN_TYPE_PRECONFIG, nil, nil, 0);
+  hSession := InternetOpen(PChar(CHROME_USER_AGENT), INTERNET_OPEN_TYPE_PRECONFIG, nil, nil, 0);
   if hSession = nil then Exit;
   try
-    hURL := InternetOpenUrl(hSession, PChar(Url), nil, 0,
+    TimeoutMs := 6000;
+    InternetSetOption(hSession, INTERNET_OPTION_CONNECT_TIMEOUT, @TimeoutMs, SizeOf(TimeoutMs));
+    InternetSetOption(hSession, INTERNET_OPTION_RECEIVE_TIMEOUT, @TimeoutMs, SizeOf(TimeoutMs));
+
+    Headers := 'Accept: application/json, text/plain, */*'#13#10 +
+               'Accept-Charset: UTF-8'#13#10;
+
+    hURL := InternetOpenUrl(hSession, PChar(Url), PChar(Headers), Length(Headers),
       INTERNET_FLAG_RELOAD or INTERNET_FLAG_NO_CACHE_WRITE or INTERNET_FLAG_SECURE, 0);
     if hURL = nil then Exit;
     try
@@ -215,7 +234,46 @@ begin
   end;
 end;
 
-function TTranslationThread.GoogleTranslate(const Text, SL, TL: string): string;
+// Fast Google Translation Engine (clients5.google.com dict-chrome-ex)
+function TTranslationThread.GoogleTranslateFast(const Text, SL, TL: string): string;
+var
+  Url, RawResponse: string;
+  PosStart, PosEnd: Integer;
+  InsideQuote: Boolean;
+  Extracted: string;
+begin
+  Result := '';
+  Url := 'https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=' +
+         SL + '&tl=' + TL + '&q=' + UrlEncode(Text);
+  RawResponse := HttpGet(Url);
+  if Trim(RawResponse) = '' then Exit;
+
+  // Expected format: ["translated text"] or [["translated text"]]
+  PosStart := Pos('"', RawResponse);
+  if PosStart > 0 then
+  begin
+    Inc(PosStart);
+    PosEnd := PosStart;
+    InsideQuote := True;
+    while PosEnd <= Length(RawResponse) do
+    begin
+      if (RawResponse[PosEnd] = '"') and (RawResponse[PosEnd - 1] <> '\') then
+      begin
+        InsideQuote := False;
+        Break;
+      end;
+      Inc(PosEnd);
+    end;
+    if not InsideQuote then
+    begin
+      Extracted := Copy(RawResponse, PosStart, PosEnd - PosStart);
+      Result := DecodeJsonString(Extracted);
+    end;
+  end;
+end;
+
+// Primary Google Translation Engine (translate.googleapis.com single gtx)
+function TTranslationThread.GoogleTranslatePrimary(const Text, SL, TL: string): string;
 var
   Url, RawResponse: string;
   p, endP, idx: Integer;
@@ -227,7 +285,6 @@ begin
   RawResponse := HttpGet(Url);
   if RawResponse = '' then Exit;
 
-  // Extract sentences from [[["part1","src1"...],["part2","src2"...]]
   idx := 1;
   while idx <= Length(RawResponse) do
   begin
@@ -255,6 +312,7 @@ begin
   end;
 end;
 
+// Tertiary Fallback Engine (MyMemory)
 function TTranslationThread.MyMemoryTranslate(const Text, SL, TL: string): string;
 var
   Url, RawResponse: string;
@@ -287,14 +345,21 @@ end;
 procedure TTranslationThread.Execute;
 begin
   try
-    FResultText := GoogleTranslate(FSourceText, FSourceLang, FTargetLang);
+    // 1. Try Google Chrome Extension Fast Engine
+    FResultText := GoogleTranslateFast(FSourceText, FSourceLang, FTargetLang);
+
+    // 2. Try Google GTX Primary Engine
+    if Trim(FResultText) = '' then
+      FResultText := GoogleTranslatePrimary(FSourceText, FSourceLang, FTargetLang);
+
+    // 3. Fallback to MyMemory
     if Trim(FResultText) = '' then
       FResultText := MyMemoryTranslate(FSourceText, FSourceLang, FTargetLang);
 
     if Trim(FResultText) <> '' then
       FSuccess := True
     else
-      FErrorMessage := 'Translation failed. Please check internet connection.';
+      FErrorMessage := 'Online translation failed. Please check internet connection.';
   except
     on E: Exception do
     begin
@@ -327,12 +392,36 @@ begin
 
   comboSourceLang.ItemIndex := 0; // Auto-Detect
   comboTargetLang.ItemIndex := 0; // Bengali
-  lblStatus.Caption := 'Ready.';
+  lblStatus.Caption := 'Ready (Google Translate Online API).';
   FWorkerThread := nil;
+end;
+
+procedure TfrmTranslator.FormShow(Sender: TObject);
+var
+  ClipText: string;
+begin
+  EnableWindowAcrylicBlur(Self.Handle, DarkModeIsEnabled, 180);
+  EnableWindowRoundedCorners(Self.Handle);
+
+  // Auto-populate from clipboard if source is empty and clipboard has text
+  if (Trim(memoSource.Text) = '') and Clipboard.HasFormat(CF_UNICODETEXT) then
+  begin
+    try
+      ClipText := Trim(Clipboard.AsText);
+      if (ClipText <> '') and (Length(ClipText) < 2000) then
+      begin
+        memoSource.Text := ClipText;
+        TranslateCurrentText;
+      end;
+    except
+      // Ignore clipboard read errors
+    end;
+  end;
 end;
 
 procedure TfrmTranslator.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
+  tmrDebounce.Enabled := False;
   if FWorkerThread <> nil then
   begin
     FWorkerThread.Terminate;
@@ -379,7 +468,6 @@ var
   TempIndex: Integer;
   TempText: string;
 begin
-  // If source was Auto-Detect, flip to English
   if comboSourceLang.ItemIndex = 0 then
     comboSourceLang.ItemIndex := comboSourceLang.Items.IndexOf('English');
 
@@ -392,6 +480,30 @@ begin
   TempText := memoSource.Text;
   memoSource.Text := memoTarget.Text;
   memoTarget.Text := TempText;
+
+  TranslateCurrentText;
+end;
+
+procedure TfrmTranslator.memoSourceChange(Sender: TObject);
+begin
+  if Trim(memoSource.Text) = '' then
+  begin
+    tmrDebounce.Enabled := False;
+    memoTarget.Clear;
+    lblStatus.Caption := 'Ready (Google Translate Online API).';
+  end
+  else
+  begin
+    tmrDebounce.Enabled := False;
+    tmrDebounce.Enabled := True; // 500ms live typing debounce
+  end;
+end;
+
+procedure TfrmTranslator.tmrDebounceTimer(Sender: TObject);
+begin
+  tmrDebounce.Enabled := False;
+  if Trim(memoSource.Text) <> '' then
+    TranslateCurrentText;
 end;
 
 procedure TfrmTranslator.TranslateCurrentText;
@@ -407,14 +519,14 @@ begin
 
   if FWorkerThread <> nil then
   begin
-    lblStatus.Caption := 'Translation in progress...';
+    lblStatus.Caption := 'Translating online...';
     Exit;
   end;
 
   SL := GetLangCode(comboSourceLang.Text, True);
   TL := GetLangCode(comboTargetLang.Text, False);
 
-  lblStatus.Caption := 'Translating via Google API...';
+  lblStatus.Caption := 'Translating online via Google API...';
   btnTranslate.Enabled := False;
 
   FWorkerThread := TTranslationThread.Create(SrcText, SL, TL, OnTranslationDone);
@@ -427,7 +539,7 @@ begin
     if FWorkerThread.Success then
     begin
       memoTarget.Text := FWorkerThread.ResultText;
-      lblStatus.Caption := 'Translation complete.';
+      lblStatus.Caption := 'Translation complete (Google Engine).';
     end
     else
     begin
@@ -468,7 +580,26 @@ begin
 end;
 
 procedure TfrmTranslator.btnSpeakClick(Sender: TObject);
+var
+  Voice: OleVariant;
+  SpokenText: string;
 begin
+  SpokenText := Trim(memoTarget.Text);
+  if SpokenText = '' then
+    SpokenText := Trim(memoSource.Text);
+
+  if SpokenText <> '' then
+  begin
+    try
+      Voice := CreateOleObject('SAPI.SpVoice');
+      Voice.Speak(SpokenText, 1); // 1 = SVSFlagsAsync
+      lblStatus.Caption := 'Playing audio...';
+      Exit;
+    except
+      // SAPI not available, fallback to Voice Dictation modal
+    end;
+  end;
+
   if frmVoiceDictate = nil then
     Application.CreateForm(TfrmVoiceDictate, frmVoiceDictate);
   frmVoiceDictate.StartDictation;

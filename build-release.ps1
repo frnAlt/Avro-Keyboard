@@ -291,6 +291,7 @@ if (-not $SkipZip) {
     # Copy Licenses & Docs
     Copy-Item -Path (Join-Path $ScriptDir "LICENSE.txt") -Destination $PortableDir -ErrorAction SilentlyContinue
     Copy-Item -Path (Join-Path $ScriptDir "Readme.md") -Destination $PortableDir -ErrorAction SilentlyContinue
+    Set-Content -Path (Join-Path $PortableDir "VERSION.txt") -Value $Version -Encoding utf8
 
     $ZipPath = Join-Path $BuildDir "Avro-Keyboard-v$Version-Portable.zip"
     if (Test-Path $ZipPath) { Remove-Item -Path $ZipPath -Force }
