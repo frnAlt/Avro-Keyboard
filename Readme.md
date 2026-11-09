@@ -3,6 +3,9 @@
 Unicode compliant open source Bangla typing software (IME).
 Visit: [https://www.omicronlab.com](https://www.omicronlab.com "OmicronLab") for latest version.
 
+> 📖 **Looking to download the modern version or fix changes not showing?**  
+> Check the **[Download, Installation & Build Guide (INSTALL_AND_DOWNLOAD_GUIDE.md)](INSTALL_AND_DOWNLOAD_GUIDE.md)** for 1-click portable download instructions, GitHub Actions CI/CD release build triggers, and Delphi local compilation steps.
+
 ## Required Delphi Version
 
 Was tested with **Delphi 12 community edition**
