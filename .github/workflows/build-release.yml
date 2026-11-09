@@ -1,0 +1,83 @@
+name: Build & Release Avro Keyboard
+
+on:
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: 'Build Configuration'
+        required: true
+        default: 'Release'
+        type: choice
+        options:
+          - Release
+          - Debug
+      platform:
+        description: 'Build Platform'
+        required: true
+        default: 'Win32'
+        type: choice
+        options:
+          - Win32
+          - Win64
+      publish_release:
+        description: 'Publish as GitHub Release'
+        required: false
+        default: false
+        type: boolean
+      tag_name:
+        description: 'Release Tag Name (e.g. your)'
+        required: false
+        default: 'v5.8.0'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Package Binaries
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Execute Headless Compilation & Packaging
+        shell: powershell
+        run: |
+          $config = "${{ inputs.configuration || 'Release' }}"
+          $platform = "${{ inputs.platform || 'Win32' }}"
+          Write-Host "Triggering Avro Keyboard build pipeline ($config | $platform)..."
+          .\build-release.ps1 -Configuration $config -Platform $platform
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Avro-Keyboard-Binaries
+          path: |
+            build/*.exe
+            build/*.dll
+            build/*.zip
+            build/SHA256SUMS.txt
+          if-no-files-found: warn
+
+      - name: Publish GitHub Release
+        if: ${{ inputs.publish_release == true || startsWith(github.ref, 'refs/tags/v') }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag_name || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v5.8.0' }}
+          name: Avro Keyboard ${{ inputs.tag_name || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v5.8.0' }}
+          target_commitish: ${{ github.sha }}
+          body_path: RELEASE_NOTES.md
+          files: |
+            build/*.zip
+            build/SHA256SUMS.txt
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -57,109 +57,148 @@ var
   S:                         TFileStream;
   APos:                      Integer;
 begin
-  TempName := GetTempDirectory + 'tmpfntavro.tmp';
-  CheckDeleteTempFile(TempName);
-
-  if CreateScalableFontResource(0, // Hidden
-    pchar(TempName),               // FON file
-    pchar(TTF_Path),               // TTF file
-    nil) { // Path - not required } then
+  FontName := '';
+  if (TTF_Path = '') or (not FileExists(TTF_Path)) then
   begin
-
+    Result := '';
+    Exit;
   end;
 
+  TempName := IncludeTrailingPathDelimiter(GetTempDirectory) + 'tmpfntavro.tmp';
+  CheckDeleteTempFile(TempName);
+
   try
-    FontName := '';
-    S := TFileStream.Create(TempName, fmOpenRead or fmShareDenyWrite);
-    try
-      // Copy resource to string
-      SetLength(AInfo, S.Size);
-      S.Read(AInfo[1], S.Size);
-      // Find FONTRES:
-      APos := Pos('FONTRES:', AInfo);
-      // This is followed by the font typeface name (null terminated)
-      if APos > 0 then
-        FontName := pchar(@AInfo[APos + 8]);
-    except
-      on e: exception do
+    if CreateScalableFontResource(0, PChar(TempName), PChar(TTF_Path), nil) then
+    begin
+      if FileExists(TempName) then
       begin
-        // nothing
+        try
+          S := TFileStream.Create(TempName, fmOpenRead or fmShareDenyWrite);
+          try
+            if S.Size > 0 then
+            begin
+              SetLength(AInfo, S.Size);
+              S.Read(AInfo[1], S.Size);
+              APos := Pos('FONTRES:', AInfo);
+              if APos > 0 then
+                FontName := PChar(@AInfo[APos + 8]);
+            end;
+          finally
+            S.Free;
+          end;
+        except
+          on E: Exception do
+            FontName := '';
+        end;
       end;
     end;
   finally
-    S.Free;
     CheckDeleteTempFile(TempName);
   end;
-  result := FontName;
+
+  Result := FontName;
 end;
 
 { =============================================================================== }
 
 procedure InstallVirtualFont(FontFilePath: string);
 var
+  ActualFontPath:                                             string;
   PrevDefaultFixedFont, PrevDefaultPropFont, VirtualFontName: string;
   Reg:                                                        TMyRegistry;
 begin
-  Reg := TMyRegistry.Create;
-  AddFontResource(pchar(FontFilePath));
-  VirtualFontName := GetFontName(FontFilePath);
-
-  Reg.RootKey := HKEY_CURRENT_USER;
-  if Reg.OpenKey('Software\Microsoft\Internet Explorer\International\Scripts\11', True) = True then
+  ActualFontPath := FontFilePath;
+  if not FileExists(ActualFontPath) then
   begin
-    PrevDefaultFixedFont := trim(Reg.ReadString('IEFixedFontName'));
-    PrevDefaultPropFont := trim(Reg.ReadString('IEPropFontName'));
+    if FileExists(ExtractFilePath(ParamStr(0)) + 'Virtual Font\Siyamrupali.ttf') then
+      ActualFontPath := ExtractFilePath(ParamStr(0)) + 'Virtual Font\Siyamrupali.ttf'
+    else if FileExists(ExtractFilePath(ParamStr(0)) + 'fonts\Siyamrupali.ttf') then
+      ActualFontPath := ExtractFilePath(ParamStr(0)) + 'fonts\Siyamrupali.ttf'
+    else if FileExists(ExtractFilePath(ParamStr(0)) + 'assets\fonts\Siyamrupali.ttf') then
+      ActualFontPath := ExtractFilePath(ParamStr(0)) + 'assets\fonts\Siyamrupali.ttf'
+    else
+      Exit;
+  end;
 
-    if PrevDefaultFixedFont = '' then
-      PrevDefaultFixedFont := 'none';
-    if PrevDefaultPropFont = '' then
-      PrevDefaultPropFont := 'none';
+  AddFontResource(PChar(ActualFontPath));
+  VirtualFontName := GetFontName(ActualFontPath);
+  if VirtualFontName = '' then
+    VirtualFontName := 'Siyam Rupali';
 
-    if trim(Reg.ReadString('IEFixedFontName_Prev')) = '' then
-      Reg.WriteString('IEFixedFontName_Prev', PrevDefaultFixedFont);
+  Reg := TMyRegistry.Create;
+  try
+    Reg.RootKey := HKEY_CURRENT_USER;
+    if Reg.OpenKey('Software\Microsoft\Internet Explorer\International\Scripts\11', True) = True then
+    begin
+      PrevDefaultFixedFont := trim(Reg.ReadString('IEFixedFontName'));
+      PrevDefaultPropFont := trim(Reg.ReadString('IEPropFontName'));
 
-    if trim(Reg.ReadString('IEPropFontName_Prev')) = '' then
-      Reg.WriteString('IEPropFontName_Prev', PrevDefaultPropFont);
+      if PrevDefaultFixedFont = '' then
+        PrevDefaultFixedFont := 'none';
+      if PrevDefaultPropFont = '' then
+        PrevDefaultPropFont := 'none';
 
-    Reg.WriteString('IEFixedFontName', VirtualFontName);
-    Reg.WriteString('IEPropFontName', VirtualFontName);
+      if trim(Reg.ReadString('IEFixedFontName_Prev')) = '' then
+        Reg.WriteString('IEFixedFontName_Prev', PrevDefaultFixedFont);
 
+      if trim(Reg.ReadString('IEPropFontName_Prev')) = '' then
+        Reg.WriteString('IEPropFontName_Prev', PrevDefaultPropFont);
+
+      Reg.WriteString('IEFixedFontName', VirtualFontName);
+      Reg.WriteString('IEPropFontName', VirtualFontName);
+    end;
+  finally
+    FreeAndNil(Reg);
   end;
 
   SendMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0);
-  FreeAndNil(Reg);
 end;
 
 { =============================================================================== }
 
 procedure RemoveVirtualFont(FontFilePath: string);
 var
+  ActualFontPath:                            string;
   PrevDefaultFixedFont, PrevDefaultPropFont: string;
   Reg:                                       TMyRegistry;
 begin
-  Reg := TMyRegistry.Create;
-  RemoveFontResource(pchar(FontFilePath));
-
-  if Reg.OpenKey('Software\Microsoft\Internet Explorer\International\Scripts\11', True) = True then
+  ActualFontPath := FontFilePath;
+  if not FileExists(ActualFontPath) then
   begin
-    PrevDefaultFixedFont := trim(Reg.ReadString('IEFixedFontName_Prev'));
-    PrevDefaultPropFont := trim(Reg.ReadString('IEPropFontName_Prev'));
+    if FileExists(ExtractFilePath(ParamStr(0)) + 'Virtual Font\Siyamrupali.ttf') then
+      ActualFontPath := ExtractFilePath(ParamStr(0)) + 'Virtual Font\Siyamrupali.ttf'
+    else if FileExists(ExtractFilePath(ParamStr(0)) + 'fonts\Siyamrupali.ttf') then
+      ActualFontPath := ExtractFilePath(ParamStr(0)) + 'fonts\Siyamrupali.ttf'
+    else if FileExists(ExtractFilePath(ParamStr(0)) + 'assets\fonts\Siyamrupali.ttf') then
+      ActualFontPath := ExtractFilePath(ParamStr(0)) + 'assets\fonts\Siyamrupali.ttf';
+  end;
 
-    if PrevDefaultFixedFont = 'none' then
-      PrevDefaultFixedFont := '';
-    if PrevDefaultPropFont = 'none' then
-      PrevDefaultPropFont := '';
+  if FileExists(ActualFontPath) then
+    RemoveFontResource(PChar(ActualFontPath));
 
-    Reg.DeleteValue('IEFixedFontName_Prev');
-    Reg.DeleteValue('IEPropFontName_Prev');
+  Reg := TMyRegistry.Create;
+  try
+    if Reg.OpenKey('Software\Microsoft\Internet Explorer\International\Scripts\11', True) = True then
+    begin
+      PrevDefaultFixedFont := trim(Reg.ReadString('IEFixedFontName_Prev'));
+      PrevDefaultPropFont := trim(Reg.ReadString('IEPropFontName_Prev'));
 
-    Reg.WriteString('IEFixedFontName', PrevDefaultFixedFont);
-    Reg.WriteString('IEPropFontName', PrevDefaultPropFont);
+      if PrevDefaultFixedFont = 'none' then
+        PrevDefaultFixedFont := '';
+      if PrevDefaultPropFont = 'none' then
+        PrevDefaultPropFont := '';
 
+      Reg.DeleteValue('IEFixedFontName_Prev');
+      Reg.DeleteValue('IEPropFontName_Prev');
+
+      Reg.WriteString('IEFixedFontName', PrevDefaultFixedFont);
+      Reg.WriteString('IEPropFontName', PrevDefaultPropFont);
+    end;
+  finally
+    FreeAndNil(Reg);
   end;
 
   SendMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0);
-  FreeAndNil(Reg);
 end;
 
 end.

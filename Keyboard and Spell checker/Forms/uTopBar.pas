@@ -191,9 +191,19 @@ type
 
       procedure WMDROPFILES(var msg: TWMDropFiles); message WM_DROPFILES;
       procedure WMDpiChanged(var Message: TWMDpi); message WM_DPICHANGED;
+      procedure WMMouseActivate(var Message: TMessage); message WM_MOUSEACTIVATE;
+      procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
+
+      procedure ExpandTopBar;
+      procedure CollapseTopBar;
 
     public
       { Public declarations }
+      FVoiceGlowLevel: Single;
+      FIsCollapsed: Boolean;
+      FExpandedWidth: Integer;
+      FIdleSeconds: Integer;
+
       BMP_AppIcon:      TBitmap;
       BMP_AppIcon_Over: TBitmap;
       BMP_AppIcon_Down: TBitmap;
@@ -238,6 +248,8 @@ type
       procedure ApplySkin;
       procedure SetButtonModeState(ST: ButtonState);
       procedure InitHints;
+      procedure SetVoiceGlow(Level: Single);
+      procedure RefreshGlassStyle;
     protected
       procedure CreateParams(var Params: TCreateParams); override;
 
@@ -257,7 +269,10 @@ uses
   uRegistrySettings,
   uWindowHandlers,
   KeyboardLayoutLoader,
-  DebugLog;
+  DebugLog,
+  uGlassmorphism,
+  WindowsDarkMode,
+  ufrmPrevW;
 
 { =============================================================================== }
 
@@ -274,31 +289,43 @@ begin
   NewRect := message.ScaledRect^;
 
   // Reposition window without resizing
-  SetWindowPos(Handle, 0, NewRect.Left, NewRect.Top, Width, // Keep current width
-    Height,                                                 // Keep current height
+  SetWindowPos(Handle, 0, NewRect.Left, NewRect.Top, Width,
+    Height,
     SWP_NOZORDER or SWP_NOACTIVATE or SWP_NOSIZE);
+
+  RefreshGlassStyle;
 end;
 
 { =============================================================================== }
 
 procedure TTopBar.ApplySkin;
+var
+  EffectiveSkin: string;
 begin
-  if LowerCase(PrevSkin) = LowerCase(InterfaceSkin) then
+  EffectiveSkin := InterfaceSkin;
+  if (LowerCase(EffectiveSkin) = 'macos glass') and DarkModeIsEnabled then
+  begin
+    if FileExists(GetAvroDataDir + 'Skin\macOS Glass Dark.avroskin') then
+      EffectiveSkin := 'macOS Glass Dark';
+  end;
+
+  if LowerCase(PrevSkin) = LowerCase(EffectiveSkin) then
     exit;
 
-  if LowerCase(InterfaceSkin) = 'internalskin*' then
+  if LowerCase(EffectiveSkin) = 'internalskin*' then
     LoadSkin('internalskin*')
   else
   begin
-    if LoadSkin(GetAvroDataDir + 'Skin\' + InterfaceSkin + '.avroskin') = False then
+    if LoadSkin(GetAvroDataDir + 'Skin\' + EffectiveSkin + '.avroskin') = False then
     begin
-      Application.MessageBox(PChar('Error loading' + GetAvroDataDir + 'Skin\' + InterfaceSkin + '.avroskin' + #10 + '' + #10 +
+      Application.MessageBox(PChar('Error loading ' + GetAvroDataDir + 'Skin\' + EffectiveSkin + '.avroskin' + #10 + '' + #10 +
             'Skin switched back to Default one.'), 'Avro Keyboard', MB_OK + MB_ICONHAND + MB_DEFBUTTON1 + MB_APPLMODAL);
       InterfaceSkin := 'internalskin*';
+      EffectiveSkin := 'internalskin*';
       LoadSkin('internalskin*');
     end;
   end;
-  PrevSkin := InterfaceSkin;
+  PrevSkin := EffectiveSkin;
 
   ImgAppIcon.Picture.Bitmap.Assign(BMP_AppIcon);
   ImgButtonMode.Picture.Bitmap.Assign(BMP_ButtonModeE);
@@ -310,6 +337,8 @@ begin
   ImgButtonHelp.Picture.Bitmap.Assign(BMP_ButtonHelp);
   ImgButtonMinimize.Picture.Bitmap.Assign(BMP_ButtonMinimize);
 
+  if Assigned(frmPrevW) then
+    frmPrevW.RefreshGlassStyle;
 end;
 
 { =============================================================================== }
@@ -425,6 +454,15 @@ begin
 
   DragAcceptFiles(Handle, True);
 
+  DoubleBuffered := True;
+  FIsCollapsed := False;
+  FExpandedWidth := Width;
+  FIdleSeconds := 0;
+  FVoiceGlowLevel := 0.0;
+
+  MakeNeverActiveWindow(Handle);
+  RefreshGlassStyle;
+
   Self.Top := 0;
   HintTimer.Enabled := True;
 end;
@@ -445,6 +483,7 @@ end;
 procedure TTopBar.FormShow(Sender: TObject);
 begin
   ApplySkin;
+  RefreshGlassStyle;
 
   TransparencyTimer.Enabled := True;
 
@@ -672,13 +711,24 @@ begin
     else
     begin
       if (X < 0) or (Y < 0) then
-        ThisResult := False
+      begin
+        ThisResult := False;
+        if (SecondsBetween(now, EnableTime) >= 15) and not FIsCollapsed then
+          CollapseTopBar;
+      end
       else if (X > Self.Width) or (Y > Self.Height) then
-        ThisResult := False
+      begin
+        ThisResult := False;
+        if (SecondsBetween(now, EnableTime) >= 15) and not FIsCollapsed then
+          CollapseTopBar;
+      end
       else
       begin
         ThisResult := True;
         EnableTime := now;
+        FIdleSeconds := 0;
+        if FIsCollapsed then
+          ExpandTopBar;
       end;
     end;
   end;
@@ -1201,9 +1251,59 @@ end;
 procedure TTopBar.CreateParams(var Params: TCreateParams);
 begin
   inherited CreateParams(Params);
-  Params.ExStyle := Params.ExStyle or WS_EX_TOPMOST;
-  Params.ExStyle := Params.ExStyle or WS_EX_TOOLWINDOW and not WS_EX_APPWINDOW;
+  Params.ExStyle := (Params.ExStyle or WS_EX_TOPMOST or WS_EX_TOOLWINDOW or WS_EX_NOACTIVATE) and not WS_EX_APPWINDOW;
   Params.WndParent := GetDesktopwindow;
+end;
+
+procedure TTopBar.WMMouseActivate(var Message: TMessage);
+begin
+  Message.Result := MA_NOACTIVATE;
+end;
+
+procedure TTopBar.WMPaint(var Message: TWMPaint);
+var
+  R: TRect;
+begin
+  inherited;
+  R := ClientRect;
+  DrawGlassmorphismBorder(Canvas, R, DarkModeIsEnabled, FVoiceGlowLevel);
+end;
+
+procedure TTopBar.ExpandTopBar;
+begin
+  if not FIsCollapsed then Exit;
+  FIsCollapsed := False;
+  if FExpandedWidth > 64 then
+    Width := FExpandedWidth;
+  RefreshGlassStyle;
+end;
+
+procedure TTopBar.CollapseTopBar;
+begin
+  if FIsCollapsed then Exit;
+  FExpandedWidth := Width;
+  FIsCollapsed := True;
+  Width := 56;
+  RefreshGlassStyle;
+end;
+
+procedure TTopBar.SetVoiceGlow(Level: Single);
+begin
+  if Abs(FVoiceGlowLevel - Level) > 0.05 then
+  begin
+    FVoiceGlowLevel := Level;
+    Invalidate;
+  end;
+end;
+
+procedure TTopBar.RefreshGlassStyle;
+begin
+  EnableWindowAcrylicBlur(Handle, DarkModeIsEnabled, 150);
+  if not EnableWindowRoundedCorners(Handle) then
+    ApplyPillWindowRegion(Handle, Width, Height);
+  if Assigned(frmPrevW) then
+    frmPrevW.RefreshGlassStyle;
+  Invalidate;
 end;
 
 { =============================================================================== }

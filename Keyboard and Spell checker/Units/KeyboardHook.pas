@@ -36,6 +36,18 @@ var
 
 const
   LLKHF_INJECTED = $10;
+  WM_AVRO_BASE            = WM_USER + 200;
+  WM_AVRO_TOGGLE_MODE     = WM_AVRO_BASE + 1;
+  WM_AVRO_TOGGLE_ENCODING = WM_AVRO_BASE + 2;
+  WM_AVRO_SPELL_CHECK     = WM_AVRO_BASE + 3;
+  WM_AVRO_VOICE_TOGGLE      = WM_AVRO_BASE + 4;
+  WM_AVRO_TRANSLATOR_TOGGLE = WM_AVRO_BASE + 5;
+
+procedure PostToggleMode;
+procedure PostToggleOutputEncoding;
+procedure PostSpellCheck;
+procedure PostVoiceToggle;
+procedure PostTranslatorToggle;
 
 implementation
 
@@ -46,6 +58,38 @@ uses
   clsLayout,
   uRegistrySettings,
   uWindowHandlers;
+
+{ =============================================================================== }
+
+procedure PostToggleMode;
+begin
+  if Assigned(AvroMainForm1) then
+    PostMessage(AvroMainForm1.Handle, WM_AVRO_TOGGLE_MODE, 0, 0);
+end;
+
+procedure PostToggleOutputEncoding;
+begin
+  if Assigned(AvroMainForm1) then
+    PostMessage(AvroMainForm1.Handle, WM_AVRO_TOGGLE_ENCODING, 0, 0);
+end;
+
+procedure PostSpellCheck;
+begin
+  if Assigned(AvroMainForm1) then
+    PostMessage(AvroMainForm1.Handle, WM_AVRO_SPELL_CHECK, 0, 0);
+end;
+
+procedure PostVoiceToggle;
+begin
+  if Assigned(AvroMainForm1) then
+    PostMessage(AvroMainForm1.Handle, WM_AVRO_VOICE_TOGGLE, 0, 0);
+end;
+
+procedure PostTranslatorToggle;
+begin
+  if Assigned(AvroMainForm1) then
+    PostMessage(AvroMainForm1.Handle, WM_AVRO_TRANSLATOR_TOGGLE, 0, 0);
+end;
 
 { =============================================================================== }
 
@@ -165,19 +209,19 @@ begin
       begin
         if (ModeSwitchKey = 'F1') and (IsTrueShift = False) and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (ToggleOutputModeKey = 'F1') and IsTrueShift and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleOutputEncoding;
+          PostToggleOutputEncoding;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (SpellerLauncherKey = 'F1') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.Spellcheck1Click(nil);
+          PostSpellCheck;
           ShouldBlock := True;
           goto ExitHere;
         end;
@@ -186,19 +230,19 @@ begin
       begin
         if (ModeSwitchKey = 'F2') and (IsTrueShift = False) and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (ToggleOutputModeKey = 'F2') and IsTrueShift and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleOutputEncoding;
+          PostToggleOutputEncoding;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (SpellerLauncherKey = 'F2') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.Spellcheck1Click(nil);
+          PostSpellCheck;
           ShouldBlock := True;
           goto ExitHere;
         end;
@@ -207,19 +251,19 @@ begin
       begin
         if (ModeSwitchKey = 'F3') and (IsTrueShift = False) and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (ToggleOutputModeKey = 'F3') and IsTrueShift and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleOutputEncoding;
+          PostToggleOutputEncoding;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (SpellerLauncherKey = 'F3') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.Spellcheck1Click(nil);
+          PostSpellCheck;
           ShouldBlock := True;
           goto ExitHere;
         end;
@@ -228,19 +272,19 @@ begin
       begin
         if (ModeSwitchKey = 'F4') and (IsTrueShift = False) and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (ToggleOutputModeKey = 'F4') and IsTrueShift and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleOutputEncoding;
+          PostToggleOutputEncoding;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (SpellerLauncherKey = 'F4') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.Spellcheck1Click(nil);
+          PostSpellCheck;
           ShouldBlock := True;
           goto ExitHere;
         end;
@@ -249,19 +293,19 @@ begin
       begin
         if (ModeSwitchKey = 'F5') and (IsTrueShift = False) and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (ToggleOutputModeKey = 'F5') and IsTrueShift and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleOutputEncoding;
+          PostToggleOutputEncoding;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (SpellerLauncherKey = 'F5') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.Spellcheck1Click(nil);
+          PostSpellCheck;
           ShouldBlock := True;
           goto ExitHere;
         end;
@@ -270,19 +314,19 @@ begin
       begin
         if (ModeSwitchKey = 'F6') and (IsTrueShift = False) and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (ToggleOutputModeKey = 'F6') and IsTrueShift and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleOutputEncoding;
+          PostToggleOutputEncoding;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (SpellerLauncherKey = 'F6') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.Spellcheck1Click(nil);
+          PostSpellCheck;
           ShouldBlock := True;
           goto ExitHere;
         end;
@@ -291,19 +335,19 @@ begin
       begin
         if (ModeSwitchKey = 'F7') and (IsTrueShift = False) and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (ToggleOutputModeKey = 'F7') and IsTrueShift and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleOutputEncoding;
+          PostToggleOutputEncoding;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (SpellerLauncherKey = 'F7') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.Spellcheck1Click(nil);
+          PostSpellCheck;
           ShouldBlock := True;
           goto ExitHere;
         end;
@@ -312,19 +356,19 @@ begin
       begin
         if (ModeSwitchKey = 'F8') and (IsTrueShift = False) and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (ToggleOutputModeKey = 'F8') and IsTrueShift and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleOutputEncoding;
+          PostToggleOutputEncoding;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (SpellerLauncherKey = 'F8') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.Spellcheck1Click(nil);
+          PostSpellCheck;
           ShouldBlock := True;
           goto ExitHere;
         end;
@@ -333,19 +377,19 @@ begin
       begin
         if (ModeSwitchKey = 'F9') and (IsTrueShift = False) and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (ToggleOutputModeKey = 'F9') and IsTrueShift and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleOutputEncoding;
+          PostToggleOutputEncoding;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (SpellerLauncherKey = 'F9') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.Spellcheck1Click(nil);
+          PostSpellCheck;
           ShouldBlock := True;
           goto ExitHere;
         end;
@@ -354,19 +398,19 @@ begin
       begin
         if (ModeSwitchKey = 'F10') and (IsTrueShift = False) and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (ToggleOutputModeKey = 'F10') and IsTrueShift and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleOutputEncoding;
+          PostToggleOutputEncoding;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (SpellerLauncherKey = 'F10') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.Spellcheck1Click(nil);
+          PostSpellCheck;
           ShouldBlock := True;
           goto ExitHere;
         end;
@@ -375,19 +419,19 @@ begin
       begin
         if (ModeSwitchKey = 'F11') and (IsTrueShift = False) and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (ToggleOutputModeKey = 'F11') and IsTrueShift and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleOutputEncoding;
+          PostToggleOutputEncoding;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (SpellerLauncherKey = 'F11') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.Spellcheck1Click(nil);
+          PostSpellCheck;
           ShouldBlock := True;
           goto ExitHere;
         end;
@@ -396,19 +440,19 @@ begin
       begin
         if (ModeSwitchKey = 'F12') and (IsTrueShift = False) and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (ToggleOutputModeKey = 'F12') and IsTrueShift and (IsControl = False) and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleOutputEncoding;
+          PostToggleOutputEncoding;
           ShouldBlock := True;
           goto ExitHere;
         end;
         if (SpellerLauncherKey = 'F12') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.Spellcheck1Click(nil);
+          PostSpellCheck;
           ShouldBlock := True;
           goto ExitHere;
         end;
@@ -417,10 +461,22 @@ begin
       begin
         if (ModeSwitchKey = 'CTRL+SPACE') and (IsTrueShift = False) and IsControl and (IsAlter = False) then
         begin
-          AvroMainForm1.ToggleMode;
+          PostToggleMode;
           ShouldBlock := True;
           goto ExitHere;
         end;
+      end
+      else if (kbdllhs.vkCode = Ord('V')) and IsTrueShift and IsControl and (not IsAlter) then
+      begin
+        PostVoiceToggle;
+        ShouldBlock := True;
+        goto ExitHere;
+      end
+      else if (kbdllhs.vkCode = Ord('T')) and IsTrueShift and IsControl and (not IsAlter) then
+      begin
+        PostTranslatorToggle;
+        ShouldBlock := True;
+        goto ExitHere;
       end;
     end
 
@@ -650,6 +706,16 @@ begin
           ShouldBlock := True;
           goto ExitHere;
         end;
+      end
+      else if (kbdllhs.vkCode = Ord('V')) and IsTrueShift and IsControl and (not IsAlter) then
+      begin
+        ShouldBlock := True;
+        goto ExitHere;
+      end
+      else if (kbdllhs.vkCode = Ord('T')) and IsTrueShift and IsControl and (not IsAlter) then
+      begin
+        ShouldBlock := True;
+        goto ExitHere;
       end;
     end;
 

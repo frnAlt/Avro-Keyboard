@@ -63,6 +63,16 @@ type
     AvroMouseClicknType1: TMenuItem;
     KeyboardLayoutEditorBuildcustomlayouts1: TMenuItem;
     SkinDesignerDesignyourownskin1: TMenuItem;
+    VoiceToText1: TMenuItem;
+    VoiceToTextMain: TMenuItem;
+    VoiceToTextTray: TMenuItem;
+    TranslatorTools: TMenuItem;
+    TranslatorMain: TMenuItem;
+    TranslatorTray: TMenuItem;
+    SkinSwitcherTools: TMenuItem;
+    SkinSwitcherMain: TMenuItem;
+    SkinSwitcherTray: TMenuItem;
+    BanglaSymbols1: TMenuItem;
     N3: TMenuItem;
     Options1: TMenuItem;
     N4: TMenuItem;
@@ -324,6 +334,10 @@ type
     procedure ManageAutoCorrectentries1Click(Sender: TObject);
     procedure KeyboardLayoutEditorBuildcustomlayouts1Click(Sender: TObject);
     procedure SkinDesignerDesignyourownskin1Click(Sender: TObject);
+    procedure VoiceToText1Click(Sender: TObject);
+    procedure Translator1Click(Sender: TObject);
+    procedure MenuSkinItemClick(Sender: TObject);
+    procedure BanglaSymbols1Click(Sender: TObject);
     procedure InternetCheckTimer(Sender: TObject);
     procedure TrayDblClick(Sender: TObject);
     procedure TrayClick(Sender: TObject);
@@ -370,6 +384,11 @@ type
       procedure HandleThemes;
 
       procedure WMCopyData(var Msg: TWMCopyData); message WM_COPYDATA;
+      procedure WMAvroToggleMode(var Msg: TMessage); message WM_AVRO_TOGGLE_MODE;
+      procedure WMAvroToggleEncoding(var Msg: TMessage); message WM_AVRO_TOGGLE_ENCODING;
+      procedure WMAvroSpellCheck(var Msg: TMessage); message WM_AVRO_SPELL_CHECK;
+      procedure WMAvroVoiceToggle(var Msg: TMessage); message WM_AVRO_VOICE_TOGGLE;
+      procedure WMAvroTranslatorToggle(var Msg: TMessage); message WM_AVRO_TRANSLATOR_TOGGLE;
     public
       { Public declarations }
       KeyboardModeChanged: Boolean;
@@ -390,6 +409,10 @@ type
       procedure TrimAppMemorySize;
       procedure Initmenu;
       procedure ToggleOutputEncoding;
+      procedure ResetKeyBuffer;
+      procedure ToggleVoiceDictation;
+      procedure ToggleTranslator;
+      procedure RefreshSkinMenus;
     protected
       procedure CreateParams(var Params: TCreateParams); override;
   end;
@@ -425,7 +448,10 @@ uses
   u_VirtualFontInstall,
   ufrmEncodingWarning,
   DebugLog,
-  WindowsDarkMode;
+  WindowsDarkMode,
+  ufrmVoiceDictate,
+  ufrmTranslator,
+  ufrmSymbolsPicker;
 
 { =============================================================================== }
 
@@ -1041,6 +1067,7 @@ begin
   InitDict;
   LoadKeyboardLayoutNames;
   Initmenu;
+  RefreshSkinMenus;
 
   Updater := TUpdateCheck.Create;
   WindowDict := TDictionary<HWND, TWindowRecord>.Create;
@@ -1636,9 +1663,10 @@ begin
 
   if StrToInt(TrayHintShowTimes) < NumberOfVisibleHints then
   begin
-    Tray.BalloonHint := 'Avro Keyboard is running here.';
+    Tray.BalloonHint := 'Avro Keyboard is minimized to the system tray.' + #13 + 'Double-click the tray icon to restore the top bar.';
     Tray.BalloonTimeout := 5000;
-    Tray.BalloonTitle := 'Avro Keyboard';
+    Tray.BalloonTitle := 'Avro Keyboard Active';
+    Tray.BalloonFlags := bfInfo;
     Tray.ShowBalloonHint;
     TrayHintShowTimes := IntToStr(StrToInt(TrayHintShowTimes) + 1);
   end;
@@ -1661,9 +1689,156 @@ begin
   Execute_Something(ExtractFilePath(Application.ExeName) + 'Skin Designer.exe');
 end;
 
+procedure TAvroMainForm1.VoiceToText1Click(Sender: TObject);
+begin
+  if frmVoiceDictate = nil then
+    Application.CreateForm(TfrmVoiceDictate, frmVoiceDictate);
+  frmVoiceDictate.StartDictation;
+end;
+
+procedure TAvroMainForm1.BanglaSymbols1Click(Sender: TObject);
+begin
+  if frmSymbolsPicker = nil then
+    Application.CreateForm(TfrmSymbolsPicker, frmSymbolsPicker);
+  frmSymbolsPicker.Show;
+end;
+
 procedure TAvroMainForm1.Spellcheck1Click(Sender: TObject);
 begin
   Execute_Something(ExtractFilePath(Application.ExeName) + 'Avro Spell checker.exe');
+end;
+
+procedure TAvroMainForm1.ResetKeyBuffer;
+begin
+  if Assigned(KeyLayout) then
+    KeyLayout.ResetDeadKey;
+end;
+
+procedure TAvroMainForm1.ToggleVoiceDictation;
+begin
+  if (frmVoiceDictate <> nil) and frmVoiceDictate.Visible then
+    frmVoiceDictate.StopDictation
+  else
+  begin
+    if frmVoiceDictate = nil then
+      Application.CreateForm(TfrmVoiceDictate, frmVoiceDictate);
+    frmVoiceDictate.StartDictation;
+  end;
+end;
+
+procedure TAvroMainForm1.WMAvroToggleMode(var Msg: TMessage);
+begin
+  ToggleMode;
+end;
+
+procedure TAvroMainForm1.WMAvroToggleEncoding(var Msg: TMessage);
+begin
+  ToggleOutputEncoding;
+end;
+
+procedure TAvroMainForm1.WMAvroSpellCheck(var Msg: TMessage);
+begin
+  Spellcheck1Click(nil);
+end;
+
+procedure TAvroMainForm1.WMAvroVoiceToggle(var Msg: TMessage);
+begin
+  ToggleVoiceDictation;
+end;
+
+procedure TAvroMainForm1.WMAvroTranslatorToggle(var Msg: TMessage);
+begin
+  ToggleTranslator;
+end;
+
+procedure TAvroMainForm1.ToggleTranslator;
+begin
+  if frmTranslator = nil then
+    Application.CreateForm(TfrmTranslator, frmTranslator);
+  if frmTranslator.Visible then
+    frmTranslator.Hide
+  else
+  begin
+    frmTranslator.Show;
+    frmTranslator.BringToFront;
+  end;
+end;
+
+procedure TAvroMainForm1.Translator1Click(Sender: TObject);
+begin
+  ToggleTranslator;
+end;
+
+procedure TAvroMainForm1.RefreshSkinMenus;
+
+  procedure PopulateSubmenu(ParentItem: TMenuItem);
+  var
+    SkinsList: TStringList;
+    Count, i: Integer;
+    MenuItem: TMenuItemExtended;
+    SkinBaseName: string;
+    ItemTitle: string;
+  begin
+    if ParentItem = nil then Exit;
+    ParentItem.Clear;
+
+    SkinsList := TStringList.Create;
+    try
+      Count := GetFileList(GetAvroDataDir + 'Skin\*.avroskin', SkinsList);
+
+      // 1. Classic Internal Retro Skin
+      MenuItem := TMenuItemExtended.Create(ParentItem);
+      MenuItem.Caption := 'Classic Default (Retro 2007)';
+      MenuItem.Value := 'internalskin*';
+      MenuItem.RadioItem := True;
+      MenuItem.Checked := (LowerCase(InterfaceSkin) = 'internalskin*');
+      MenuItem.OnClick := MenuSkinItemClick;
+      ParentItem.Add(MenuItem);
+
+      for i := 0 to Count - 1 do
+      begin
+        SkinBaseName := RemoveExtension(SkinsList[i]);
+        if LowerCase(SkinBaseName) = 'internalskin*' then Continue;
+
+        MenuItem := TMenuItemExtended.Create(ParentItem);
+        MenuItem.Value := SkinBaseName;
+        MenuItem.RadioItem := True;
+        MenuItem.Checked := (LowerCase(InterfaceSkin) = LowerCase(SkinBaseName));
+        MenuItem.OnClick := MenuSkinItemClick;
+
+        ItemTitle := SkinBaseName;
+        if LowerCase(SkinBaseName) = 'macos glass' then
+          ItemTitle := 'macOS Glass (Modern Frosted Glass)'
+        else if LowerCase(SkinBaseName) = 'macos glass dark' then
+          ItemTitle := 'macOS Glass Dark (Dark Glass)'
+        else if Pos('flat', LowerCase(SkinBaseName)) > 0 then
+          ItemTitle := SkinBaseName + ' (Color Accent)';
+
+        MenuItem.Caption := ItemTitle;
+        ParentItem.Add(MenuItem);
+      end;
+    finally
+      SkinsList.Free;
+    end;
+  end;
+
+begin
+  PopulateSubmenu(SkinSwitcherTools);
+  PopulateSubmenu(SkinSwitcherMain);
+  PopulateSubmenu(SkinSwitcherTray);
+end;
+
+procedure TAvroMainForm1.MenuSkinItemClick(Sender: TObject);
+var
+  SelectedSkin: string;
+begin
+  if not (Sender is TMenuItemExtended) then Exit;
+  SelectedSkin := (Sender as TMenuItemExtended).Value;
+  InterfaceSkin := SelectedSkin;
+  SaveSettings;
+  if Assigned(Topbar) then
+    Topbar.ApplySkin;
+  RefreshSkinMenus;
 end;
 
 { =============================================================================== }
@@ -1945,7 +2120,15 @@ begin
   if cmd = 'restore' then
   begin
     RestoreFromTray;
-    Topbar.AlphaBlendValue := 255;
+    if Assigned(Topbar) then
+    begin
+      Topbar.Visible := True;
+      Topbar.ExpandTopBar;
+      Topbar.AlphaBlendValue := 255;
+      SetWindowPos(Topbar.Handle, HWND_TOPMOST, Topbar.Left, Topbar.Top, Topbar.Width, Topbar.Height,
+        SWP_SHOWWINDOW or SWP_NOACTIVATE);
+      Topbar.RefreshGlassStyle;
+    end;
 
     // Send something back
     Msg.Result := 21;

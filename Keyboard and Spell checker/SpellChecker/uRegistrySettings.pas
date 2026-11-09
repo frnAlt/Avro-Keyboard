@@ -38,6 +38,7 @@ var
   IgnoreAssamese: string;
   IgnoreSingle:   string;
   FullSuggestion: string;
+  EnableGoogleSpell: string;
 
 procedure LoadSettings;
 procedure ValidateSettings;
@@ -105,6 +106,7 @@ begin
     IgnoreAssamese := UpperCase(Reg.ReadStringDef('IgnoreAssamese', 'Yes'));
     IgnoreSingle := UpperCase(Reg.ReadStringDef('IgnoreSingle', 'Yes'));
     FullSuggestion := UpperCase(Reg.ReadStringDef('FullSuggestion', 'No'));
+    EnableGoogleSpell := UpperCase(Reg.ReadStringDef('EnableGoogleSpell', 'Yes'));
     {$ENDIF}
   end;
   Reg.Free;
@@ -136,6 +138,7 @@ begin
   IgnoreAssamese := UpperCase(XML.GetValue('IgnoreAssamese', 'Yes'));
   IgnoreSingle := UpperCase(XML.GetValue('IgnoreSingle', 'Yes'));
   FullSuggestion := UpperCase(XML.GetValue('FullSuggestion', 'No'));
+  EnableGoogleSpell := UpperCase(XML.GetValue('EnableGoogleSpell', 'Yes'));
   {$ENDIF}
   XML.Free;
 end;
@@ -171,6 +174,7 @@ begin
     Reg.WriteString('IgnoreAssamese', IgnoreAssamese);
     Reg.WriteString('IgnoreSingle', IgnoreSingle);
     Reg.WriteString('FullSuggestion', FullSuggestion);
+    Reg.WriteString('EnableGoogleSpell', EnableGoogleSpell);
     {$ENDIF}
   end;
   Reg.Free;
@@ -202,6 +206,7 @@ begin
   XML.SetValue('IgnoreAssamese', IgnoreAssamese);
   XML.SetValue('IgnoreSingle', IgnoreSingle);
   XML.SetValue('FullSuggestion', FullSuggestion);
+  XML.SetValue('EnableGoogleSpell', EnableGoogleSpell);
   {$ENDIF}
   XML.SaveXMLData;
   XML.Free;
@@ -242,6 +247,8 @@ begin
     IgnoreSingle := 'YES';
   if not((FullSuggestion = 'YES') or (FullSuggestion = 'NO')) then
     FullSuggestion := 'NO';
+  if not((EnableGoogleSpell = 'YES') or (EnableGoogleSpell = 'NO')) then
+    EnableGoogleSpell := 'YES';
   {$ENDIF}
 end;
 

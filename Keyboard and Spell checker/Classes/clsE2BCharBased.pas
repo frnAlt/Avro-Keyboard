@@ -101,7 +101,8 @@ uses
   uFileFolderHandling,
   BanglaChars,
   uDBase,
-  WindowsVersion;
+  WindowsVersion,
+  uModernPhoneticEngine;
 
 { TE2BCharBased }
 
@@ -195,6 +196,7 @@ var
   I: Integer;
 begin
   inherited;
+  InitModernPhoneticEngine;
   Parser := TEnglishToBangla.Create;
   Abbreviation := TAbbreviation.Create;
   Bijoy := TUnicodeToBijoy2000.Create;
@@ -647,81 +649,180 @@ begin
     VK_1:
       begin
         if var_IsTrueShift = True then
-          AddStr('!');
-        if var_IsTrueShift = False then
-          AddStr('1');
+          AddStr('!')
+        else
+        begin
+          if (frmPrevW.List.Count > 1) and (EnglishT <> '') and (ModernPhoneticEngine <> nil) and (ModernPhoneticEngine.HasAlpha(EnglishT)) then
+          begin
+            frmPrevW.SelectNItem(0);
+            UpdateCandidateOption;
+            ResetDeadKey;
+            Block := True;
+            exit;
+          end
+          else
+            AddStr('1');
+        end;
         Block := True;
         exit;
       end;
     VK_2:
       begin
         if var_IsTrueShift = True then
-          AddStr('@');
-        if var_IsTrueShift = False then
-          AddStr('2');
+          AddStr('@')
+        else
+        begin
+          if (frmPrevW.List.Count > 1) and (EnglishT <> '') and (ModernPhoneticEngine <> nil) and (ModernPhoneticEngine.HasAlpha(EnglishT)) then
+          begin
+            frmPrevW.SelectNItem(1);
+            UpdateCandidateOption;
+            ResetDeadKey;
+            Block := True;
+            exit;
+          end
+          else
+            AddStr('2');
+        end;
         Block := True;
         exit;
       end;
     VK_3:
       begin
         if var_IsTrueShift = True then
-          AddStr('#');
-        if var_IsTrueShift = False then
-          AddStr('3');
+          AddStr('#')
+        else
+        begin
+          if (frmPrevW.List.Count > 2) and (EnglishT <> '') and (ModernPhoneticEngine <> nil) and (ModernPhoneticEngine.HasAlpha(EnglishT)) then
+          begin
+            frmPrevW.SelectNItem(2);
+            UpdateCandidateOption;
+            ResetDeadKey;
+            Block := True;
+            exit;
+          end
+          else
+            AddStr('3');
+        end;
         Block := True;
         exit;
       end;
     VK_4:
       begin
         if var_IsTrueShift = True then
-          AddStr('$');
-        if var_IsTrueShift = False then
-          AddStr('4');
+          AddStr('$')
+        else
+        begin
+          if (frmPrevW.List.Count > 3) and (EnglishT <> '') and (ModernPhoneticEngine <> nil) and (ModernPhoneticEngine.HasAlpha(EnglishT)) then
+          begin
+            frmPrevW.SelectNItem(3);
+            UpdateCandidateOption;
+            ResetDeadKey;
+            Block := True;
+            exit;
+          end
+          else
+            AddStr('4');
+        end;
         Block := True;
         exit;
       end;
     VK_5:
       begin
         if var_IsTrueShift = True then
-          AddStr('%');
-        if var_IsTrueShift = False then
-          AddStr('5');
+          AddStr('%')
+        else
+        begin
+          if (frmPrevW.List.Count > 4) and (EnglishT <> '') and (ModernPhoneticEngine <> nil) and (ModernPhoneticEngine.HasAlpha(EnglishT)) then
+          begin
+            frmPrevW.SelectNItem(4);
+            UpdateCandidateOption;
+            ResetDeadKey;
+            Block := True;
+            exit;
+          end
+          else
+            AddStr('5');
+        end;
         Block := True;
         exit;
       end;
     VK_6:
       begin
         if var_IsTrueShift = True then
-          AddStr('^');
-        if var_IsTrueShift = False then
-          AddStr('6');
+          AddStr('^')
+        else
+        begin
+          if (frmPrevW.List.Count > 5) and (EnglishT <> '') and (ModernPhoneticEngine <> nil) and (ModernPhoneticEngine.HasAlpha(EnglishT)) then
+          begin
+            frmPrevW.SelectNItem(5);
+            UpdateCandidateOption;
+            ResetDeadKey;
+            Block := True;
+            exit;
+          end
+          else
+            AddStr('6');
+        end;
         Block := True;
         exit;
       end;
     VK_7:
       begin
         if var_IsTrueShift = True then
-          AddStr('&');
-        if var_IsTrueShift = False then
-          AddStr('7');
+          AddStr('&')
+        else
+        begin
+          if (frmPrevW.List.Count > 6) and (EnglishT <> '') and (ModernPhoneticEngine <> nil) and (ModernPhoneticEngine.HasAlpha(EnglishT)) then
+          begin
+            frmPrevW.SelectNItem(6);
+            UpdateCandidateOption;
+            ResetDeadKey;
+            Block := True;
+            exit;
+          end
+          else
+            AddStr('7');
+        end;
         Block := True;
         exit;
       end;
     VK_8:
       begin
         if var_IsTrueShift = True then
-          AddStr('*');
-        if var_IsTrueShift = False then
-          AddStr('8');
+          AddStr('*')
+        else
+        begin
+          if (frmPrevW.List.Count > 7) and (EnglishT <> '') and (ModernPhoneticEngine <> nil) and (ModernPhoneticEngine.HasAlpha(EnglishT)) then
+          begin
+            frmPrevW.SelectNItem(7);
+            UpdateCandidateOption;
+            ResetDeadKey;
+            Block := True;
+            exit;
+          end
+          else
+            AddStr('8');
+        end;
         Block := True;
         exit;
       end;
     VK_9:
       begin
         if var_IsTrueShift = True then
-          AddStr('(');
-        if var_IsTrueShift = False then
-          AddStr('9');
+          AddStr('(')
+        else
+        begin
+          if (frmPrevW.List.Count > 8) and (EnglishT <> '') and (ModernPhoneticEngine <> nil) and (ModernPhoneticEngine.HasAlpha(EnglishT)) then
+          begin
+            frmPrevW.SelectNItem(8);
+            UpdateCandidateOption;
+            ResetDeadKey;
+            Block := True;
+            exit;
+          end
+          else
+            AddStr('9');
+        end;
         Block := True;
         exit;
       end;
@@ -1081,15 +1182,35 @@ begin
       end;
     VK_RIGHT:
       begin
-        Block := False;
-        ResetDeadKey;
-        exit;
+        if (frmPrevW.List.Count > 1) and (EnglishT <> '') then
+        begin
+          Block := True;
+          frmPrevW.SelectNextItem;
+          UpdateCandidateOption;
+          exit;
+        end
+        else
+        begin
+          Block := False;
+          ResetDeadKey;
+          exit;
+        end;
       end;
     VK_LEFT:
       begin
-        Block := False;
-        ResetDeadKey;
-        exit;
+        if (frmPrevW.List.Count > 1) and (EnglishT <> '') then
+        begin
+          Block := True;
+          frmPrevW.SelectPrevItem;
+          UpdateCandidateOption;
+          exit;
+        end
+        else
+        begin
+          Block := False;
+          ResetDeadKey;
+          exit;
+        end;
       end;
     VK_BACK:
       begin
@@ -1145,145 +1266,90 @@ var
   I:                                                        Integer;
   RegExQuery:                                               string;
   TempBanglaText1, TempBanglaText2:                         string;
-  DictionaryFirstItem:                                      string;
   Starting_Ignoreable_T, Middle_Main_T, Ending_Ignorable_T: string;
   AbbText:                                                  string;
   CandidateItem:                                            string;
+  CandidateList:                                            TStringList;
 begin
   frmPrevW.List.Items.Clear;
 
-  Parser.AutoCorrectEnabled := True;
-  TempBanglaText1 := Parser.Convert(EnglishT);
-  Parser.AutoCorrectEnabled := False;
-  TempBanglaText2 := Parser.Convert(EnglishT);
+  CutText(EnglishT, Starting_Ignoreable_T, Middle_Main_T, Ending_Ignorable_T);
 
-  if TempBanglaText1 = TempBanglaText2 then
-    frmPrevW.List.Items.Add(TempBanglaText1)
-  else
-  begin
-    // If FAutoCorrect Then Begin
-    frmPrevW.List.Items.Add(TempBanglaText1);
-    frmPrevW.List.Items.Add(TempBanglaText2);
-    // End
-    // Else Begin
-    // frmPrevW.List.Items.Add(TempBanglaText2);
-    // frmPrevW.List.Items.Add(TempBanglaText1);
-    // End;
-  end;
-
-  if (PhoneticMode = 'ONLYCHAR') or (ShowPrevWindow = 'NO') then
-  begin
-    if (TempBanglaText1 <> TempBanglaText2) then
-    begin
-      if FAutoCorrect then
-        frmPrevW.SelectItem(EscapeSpecialCharacters(TempBanglaText1))
-      else
-        frmPrevW.SelectItem(EscapeSpecialCharacters(TempBanglaText2));
-    end
+  CandidateList := TStringList.Create;
+  try
+    // 1. Google-transliteration style candidate generation:
+    // Uses compact frequency dictionary & fuzzy phoneme matching
+    if Middle_Main_T <> '' then
+      ModernPhoneticEngine.GetCandidates(Middle_Main_T, CandidateList)
     else
-      frmPrevW.SelectFirstItem;
-  end
-  else
-  begin
-    CutText(EnglishT, Starting_Ignoreable_T, Middle_Main_T, Ending_Ignorable_T);
-    if (Length(Middle_Main_T) <= Max_EnglishLength) and (Length(Middle_Main_T) > 0) then
+      ModernPhoneticEngine.GetCandidates(EnglishT, CandidateList);
+
+    // 2. Avro rule-based phonetic parser (autocorrected & standard)
+    Parser.AutoCorrectEnabled := True;
+    TempBanglaText1 := Parser.Convert(EnglishT);
+    Parser.AutoCorrectEnabled := False;
+    TempBanglaText2 := Parser.Convert(EnglishT);
+
+    if (TempBanglaText1 <> '') and (CandidateList.IndexOf(TempBanglaText1) < 0) then
+      CandidateList.Add(TempBanglaText1);
+    if (TempBanglaText2 <> '') and (TempBanglaText2 <> TempBanglaText1) and (CandidateList.IndexOf(TempBanglaText2) < 0) then
+      CandidateList.Add(TempBanglaText2);
+
+    // 3. Avro SQLite word database search (if enabled and applicable)
+    if (PhoneticMode <> 'ONLYCHAR') and (Length(Middle_Main_T) <= Max_EnglishLength) and (Length(Middle_Main_T) > 0) then
     begin
-
       WStringList.Clear;
-
       if Middle_Main_T = PhoneticCache[Length(Middle_Main_T)].EnglishT then
       begin
         WStringList.Assign(PhoneticCache[Length(Middle_Main_T)].Results);
-        AddSuffix(Middle_Main_T, WStringList);
-        SimilarSort(TempBanglaText2, WStringList);
-        AbbText := '';
-        AbbText := Abbreviation.CheckConvert(Middle_Main_T);
-        if AbbText <> '' then
-          WStringList.Add(AbbText);
-        PadResults(Starting_Ignoreable_T, Ending_Ignorable_T, WStringList);
       end
       else
       begin
         RegExQuery := RegExBuilder.Convert(Middle_Main_T);
         uRegExPhoneticSearch.SearchPhonetic(Middle_Main_T, RegExQuery, WStringList);
-
         Fix_ZWNJ_ZWJ(WStringList);
         AddToCache(Middle_Main_T, WStringList);
-        AddSuffix(Middle_Main_T, WStringList);
-        SimilarSort(TempBanglaText2, WStringList);
-        AbbText := '';
-        AbbText := Abbreviation.CheckConvert(Middle_Main_T);
-        if AbbText <> '' then
-          WStringList.Add(AbbText);
-        PadResults(Starting_Ignoreable_T, Ending_Ignorable_T, WStringList);
       end;
-
-      if WStringList.Count > 0 then
-        DictionaryFirstItem := WStringList[0];
+      AddSuffix(Middle_Main_T, WStringList);
+      SimilarSort(TempBanglaText2, WStringList);
+      AbbText := '';
+      AbbText := Abbreviation.CheckConvert(Middle_Main_T);
+      if AbbText <> '' then
+        WStringList.Add(AbbText);
 
       for I := 0 to WStringList.Count - 1 do
       begin
-        if (WStringList[I] <> TempBanglaText1) and (WStringList[I] <> TempBanglaText2) then
-          frmPrevW.List.Items.Add(WStringList[I]);
+        if CandidateList.IndexOf(WStringList[I]) < 0 then
+          CandidateList.Add(WStringList[I]);
       end;
+    end;
 
-      // Add English option as the last item
-      frmPrevW.List.Items.Add(EnglishT);
+    // Pad punctuation if present
+    if (Starting_Ignoreable_T <> '') or (Ending_Ignorable_T <> '') then
+      PadResults(Starting_Ignoreable_T, Ending_Ignorable_T, CandidateList);
 
-      // frmPrevW.SelectFirstItem;
-      if CandidateDict.TryGetValue(Middle_Main_T, CandidateItem) and (SaveCandidate = 'YES') then
-      begin
-        frmPrevW.SelectItem(EscapeSpecialCharacters(CandidateItem));
-      end
-      else
-      begin
-        if WStringList.Count > 0 then
-        begin
-          if Length(Middle_Main_T) = 1 then
-            frmPrevW.SelectFirstItem
-          else
-          begin
-            if (TempBanglaText1 <> TempBanglaText2) then
-            begin
-              if FAutoCorrect then
-                frmPrevW.SelectItem(EscapeSpecialCharacters(TempBanglaText1))
-              else
-              begin
-                if PhoneticMode = 'DICT' then
-                begin
-                  if DictionaryFirstItem <> '' then
-                    frmPrevW.SelectItem(EscapeSpecialCharacters(DictionaryFirstItem))
-                  else
-                    frmPrevW.SelectItem(EscapeSpecialCharacters(WStringList[0]));
-                end
-                else if PhoneticMode = 'CHAR' then
-                begin
-                  frmPrevW.SelectItem(EscapeSpecialCharacters(TempBanglaText2))
-                end;
-              end;
-            end
-            else
-            begin
-              if PhoneticMode = 'DICT' then
-              begin
-                if DictionaryFirstItem <> '' then
-                  frmPrevW.SelectItem(EscapeSpecialCharacters(DictionaryFirstItem))
-                else
-                  frmPrevW.SelectItem(EscapeSpecialCharacters(WStringList[0]));
-              end
-              else if PhoneticMode = 'CHAR' then
-              begin
-                frmPrevW.SelectItem(EscapeSpecialCharacters(TempBanglaText2))
-              end;
-            end;
-          end;
-        end
-        else
-          frmPrevW.SelectFirstItem;
-      end;
-    end
-    else
-      frmPrevW.SelectFirstItem;
+    // Always append verbatim English text as the final candidate
+    if CandidateList.IndexOf(EnglishT) < 0 then
+      CandidateList.Add(EnglishT);
+
+    // Populate frmPrevW.List with all ranked candidates
+    for I := 0 to CandidateList.Count - 1 do
+      frmPrevW.List.Items.Add(CandidateList[I]);
+
+  finally
+    FreeAndNil(CandidateList);
+  end;
+
+  // Candidate selection:
+  // If user previously remembered a specific candidate, select it:
+  if CandidateDict.TryGetValue(Middle_Main_T, CandidateItem) and (SaveCandidate = 'YES') then
+  begin
+    frmPrevW.SelectItem(EscapeSpecialCharacters(CandidateItem));
+  end
+  else
+  begin
+    // Select the best candidate (Candidate 1) by default:
+    frmPrevW.SelectFirstItem;
   end;
 
   frmPrevW.UpdateListHeight;

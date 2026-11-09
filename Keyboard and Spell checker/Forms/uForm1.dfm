@@ -1434,6 +1434,22 @@ object AvroMainForm1: TAvroMainForm1
       ShortCut = 16502
       OnClick = Spellcheck1Click
     end
+    object VoiceToTextMain: TMenuItem
+      Caption = 'Voice to Text : Speak in Bangla...'
+      ImageIndex = 9
+      ShortCut = 49238
+      OnClick = VoiceToText1Click
+    end
+    object TranslatorMain: TMenuItem
+      Caption = 'Bangla & Multilingual Translator...'
+      ImageIndex = 23
+      ShortCut = 49236
+      OnClick = Translator1Click
+    end
+    object SkinSwitcherMain: TMenuItem
+      Caption = 'Skins && Color Themes'
+      ImageIndex = 4
+    end
     object N41: TMenuItem
       Caption = '-'
     end
@@ -1680,6 +1696,28 @@ object AvroMainForm1: TAvroMainForm1
       ImageIndex = 4
       OnClick = SkinDesignerDesignyourownskin1Click
     end
+    object SkinSwitcherTools: TMenuItem
+      Caption = 'Skins && Color Themes'
+      ImageIndex = 4
+    end
+    object TranslatorTools: TMenuItem
+      Caption = 'Bangla & Multilingual Translator...'
+      ImageIndex = 23
+      ShortCut = 49236
+      OnClick = Translator1Click
+    end
+    object VoiceToText1: TMenuItem
+      Caption = 'Voice to Text : Speak in Bangla...'
+      ImageIndex = 9
+      ShortCut = 49238
+      OnClick = VoiceToText1Click
+    end
+    object BanglaSymbols1: TMenuItem
+      Caption = 'Bangla Symbols & Emoji Picker...'
+      ImageIndex = 22
+      ShortCut = 49235
+      OnClick = BanglaSymbols1Click
+    end
     object LayoutViewerShowactivekeyboardlayout1: TMenuItem
       Caption = 'Layout Viewer : Show active keyboard layout...'
       ImageIndex = 22
@@ -1837,6 +1875,22 @@ object AvroMainForm1: TAvroMainForm1
       ImageIndex = 24
       ShortCut = 16502
       OnClick = Spellcheck1Click
+    end
+    object VoiceToTextTray: TMenuItem
+      Caption = 'Voice to Text : Speak in Bangla...'
+      ImageIndex = 9
+      ShortCut = 49238
+      OnClick = VoiceToText1Click
+    end
+    object TranslatorTray: TMenuItem
+      Caption = 'Bangla & Multilingual Translator...'
+      ImageIndex = 23
+      ShortCut = 49236
+      OnClick = Translator1Click
+    end
+    object SkinSwitcherTray: TMenuItem
+      Caption = 'Skins && Color Themes'
+      ImageIndex = 4
     end
     object N43: TMenuItem
       Caption = '-'

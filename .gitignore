@@ -41,6 +41,8 @@
 # Inno Setup
 setup.iss
 
+.superpowers/
+
 # Delphi compiler-generated binaries (safe to delete)
 *.exe
 *.dll

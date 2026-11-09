@@ -62,7 +62,12 @@ uses
   DebugLog in 'Units\DebugLog.pas',
   Vcl.Themes,
   Vcl.Styles,
-  WindowsDarkMode in 'Units\WindowsDarkMode.pas';
+  WindowsDarkMode in 'Units\WindowsDarkMode.pas',
+  uGlassmorphism in 'Units\uGlassmorphism.pas',
+  uOfflineSTTWrapper in 'Units\uOfflineSTTWrapper.pas',
+  ufrmVoiceDictate in 'Forms\ufrmVoiceDictate.pas' {frmVoiceDictate},
+  ufrmTranslator in 'Forms\ufrmTranslator.pas' {frmTranslator},
+  uModernPhoneticEngine in 'Units\uModernPhoneticEngine.pas';
 
 var
   Mutex: THandle;
@@ -83,12 +88,8 @@ begin
   Mutex := CreateMutex(nil, True, 'Avro_Keyboard');
   if (Mutex = 0) or (GetLastError <> 0) then
   begin
-
+    // Signal the existing running instance to restore, expand, and show the floating TopBar
     uCommandLineFunctions.SendCommand('restore');
-
-    Application.MessageBox('Avro Keyboard is already running on this system and' + #10 + 'running more than one instance is not allowed.', 'Avro Keyboard',
-      MB_OK + MB_ICONEXCLAMATION + MB_DEFBUTTON1 + MB_APPLMODAL);
-
     Application.Terminate;
     exit;
   end;

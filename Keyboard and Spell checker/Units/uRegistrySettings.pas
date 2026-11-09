@@ -103,6 +103,7 @@ implementation
 uses
   uForm1,
   uTopBar,
+  uFileFolderHandling,
   WindowsVersion;
 
 { =============================================================================== }
@@ -138,7 +139,14 @@ begin
   TopBarTransparent := UpperCase(XML.GetValue('TopBarTransparent', 'Yes'));
 
   // Inteface Settings
-  InterfaceSkin := XML.GetValue('InterfaceSkin', 'internalskin*');
+  InterfaceSkin := XML.GetValue('InterfaceSkin', 'macOS Glass');
+  if (InterfaceSkin = '') or (InterfaceSkin = 'internalskin*') then
+  begin
+    if FileExists(GetAvroDataDir + 'Skin\macOS Glass.avroskin') then
+      InterfaceSkin := 'macOS Glass'
+    else
+      InterfaceSkin := 'internalskin*';
+  end;
   TopBarTransparencyLevel := XML.GetValue('TopBarTransparencyLevel', '80');
   TopBarTransparent := XML.GetValue('TopBarTransparent', 'YES');
   TrayHintShowTimes := XML.GetValue('TrayHintShowTimes', '0');
@@ -301,7 +309,14 @@ begin
     AvroUpdateLastCheck := Reg.ReadDateDef('AvroUpdateLastCheck', Now);
 
     // Inteface Settings
-    InterfaceSkin := Reg.ReadStringDef('InterfaceSkin', 'internalskin*');
+    InterfaceSkin := Reg.ReadStringDef('InterfaceSkin', 'macOS Glass');
+    if (InterfaceSkin = '') or (InterfaceSkin = 'internalskin*') then
+    begin
+      if FileExists(GetAvroDataDir + 'Skin\macOS Glass.avroskin') then
+        InterfaceSkin := 'macOS Glass'
+      else
+        InterfaceSkin := 'internalskin*';
+    end;
     TopBarTransparencyLevel := Reg.ReadStringDef('TopBarTransparencyLevel', '80');
     TopBarTransparent := Reg.ReadStringDef('TopBarTransparent', 'YES');
     TrayHintShowTimes := Reg.ReadStringDef('TrayHintShowTimes', '0');

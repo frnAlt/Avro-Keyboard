@@ -96,6 +96,7 @@ end;
 procedure MakeNeverActiveWindow(const xFormHwnd: HWND);
 begin
   SetWindowLong(xFormHwnd, GWL_EXSTYLE, GetWindowLong(xFormHwnd, GWL_EXSTYLE) or WS_EX_NOACTIVATE);
+  SetWindowPos(xFormHwnd, 0, 0, 0, 0, 0, SWP_NOMOVE or SWP_NOSIZE or SWP_NOZORDER or SWP_NOACTIVATE or SWP_FRAMECHANGED);
 end;
 
 { =============================================================================== }
