@@ -8,9 +8,9 @@ object frmPrevW: TfrmPrevW
   AlphaBlend = True
   BorderIcons = []
   BorderStyle = bsNone
-  ClientHeight = 452
-  ClientWidth = 404
-  Color = clInfoBk
+  ClientHeight = 42
+  ClientWidth = 260
+  Color = clBlack
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -17

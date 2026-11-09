@@ -92,7 +92,9 @@ type
     FSelectedIndex:           Integer;
     FHoverIndex:              Integer;
     FPinHover:                Boolean;
+    FMenuHover:               Boolean;
     FPinRect:                 TRect;
+    FMenuRect:                TRect;
     FDragStart:               TPoint;
     FIsDragging:              Boolean;
 
@@ -110,6 +112,7 @@ type
     procedure TurnOffFollowingCaret;
     procedure RefreshPinIcon;
     procedure DrawPinGlyph(ACanvas: TCanvas; R: TRect; IsPinned, IsDark, IsHover: Boolean);
+    procedure DrawMenuGlyph(ACanvas: TCanvas; R: TRect; IsDark, IsHover: Boolean);
 
     procedure MoveWindow(X, Y: Integer);
 
@@ -462,11 +465,13 @@ begin
   FHoverIndex := -1;
   FSelectedIndex := 0;
   FPinHover := False;
+  FMenuHover := False;
   FIsDragging := False;
 
   Height := 42;
   Width := 260;
-  FPinRect := Rect(Width - 28, 9, Width - 6, 33);
+  FMenuRect := Rect(Width - 52, 9, Width - 30, 33);
+  FPinRect := Rect(Width - 26, 9, Width - 6, 33);
 
   RefreshGlassStyle;
   RefreshPinIcon;
@@ -545,7 +550,7 @@ end;
 procedure TfrmPrevW.ShowPreview;
 begin
   TopMost(frmPrevW.Handle);
-  self.AlphaBlendValue := 255;
+  self.AlphaBlendValue := 228;
   PreviewWCurrentlyVisible := True;
   RefreshGlassStyle;
   Application.ProcessMessages;
@@ -728,14 +733,15 @@ begin
     XPos := XPos + ChipW + 6;
   end;
 
-  TotalW := XPos + 34;
-  if TotalW < 180 then TotalW := 180;
+  TotalW := XPos + 56;
+  if TotalW < 220 then TotalW := 220;
   if TotalW > 850 then TotalW := 850;
 
   self.Width := TotalW;
   self.Height := 42;
 
-  FPinRect := Rect(Width - 28, 9, Width - 6, 33);
+  FMenuRect := Rect(Width - 52, 9, Width - 30, 33);
+  FPinRect := Rect(Width - 26, 9, Width - 6, 33);
 
   RefreshGlassStyle;
 end;
@@ -752,12 +758,45 @@ end;
 procedure TfrmPrevW.CMMouseLeave(var Message: TMessage);
 begin
   inherited;
-  if (FHoverIndex <> -1) or FPinHover then
+  if (FHoverIndex <> -1) or FPinHover or FMenuHover then
   begin
     FHoverIndex := -1;
     FPinHover := False;
+    FMenuHover := False;
     Invalidate;
   end;
+end;
+
+{ =============================================================================== }
+
+procedure TfrmPrevW.DrawMenuGlyph(ACanvas: TCanvas; R: TRect; IsDark, IsHover: Boolean);
+var
+  MidX, MidY: Integer;
+begin
+  MidX := (R.Left + R.Right) div 2;
+  MidY := (R.Top + R.Bottom) div 2;
+
+  ACanvas.Brush.Style := bsSolid;
+  if IsHover then
+  begin
+    if IsDark then
+      ACanvas.Brush.Color := RGB(55, 65, 80)
+    else
+      ACanvas.Brush.Color := RGB(225, 235, 248);
+    ACanvas.Pen.Color := clNone;
+    ACanvas.RoundRect(R.Left, R.Top, R.Right, R.Bottom, 6, 6);
+  end;
+
+  if IsDark then
+    ACanvas.Brush.Color := RGB(180, 190, 205)
+  else
+    ACanvas.Brush.Color := RGB(100, 110, 125);
+  ACanvas.Pen.Color := ACanvas.Brush.Color;
+
+  // Modern 3 dots (...)
+  ACanvas.Ellipse(MidX - 6, MidY - 2, MidX - 2, MidY + 2);
+  ACanvas.Ellipse(MidX - 2, MidY - 2, MidX + 2, MidY + 2);
+  ACanvas.Ellipse(MidX + 2, MidY - 2, MidX + 6, MidY + 2);
 end;
 
 { =============================================================================== }
@@ -834,9 +873,9 @@ begin
       // Draw Glassmorphism Frosted Backdrop
       ACanvas.Brush.Style := bsSolid;
       if IsDark then
-        ACanvas.Brush.Color := RGB(24, 26, 32)
+        ACanvas.Brush.Color := RGB(18, 20, 26)
       else
-        ACanvas.Brush.Color := RGB(246, 248, 252);
+        ACanvas.Brush.Color := RGB(242, 244, 250);
       ACanvas.FillRect(R);
 
       // Draw Specular Glassmorphism Border
@@ -956,6 +995,9 @@ begin
         end;
       end;
 
+      // Draw Menu Button
+      DrawMenuGlyph(ACanvas, FMenuRect, IsDark, FMenuHover);
+
       // Draw Pin Button
       DrawPinGlyph(ACanvas, FPinRect, FollowCaretByDefault = 'YES', IsDark, FPinHover);
 
@@ -989,6 +1031,13 @@ begin
     end;
   end;
 
+  // Check menu button click
+  if PtInRect(FMenuRect, Point(X, Y)) then
+  begin
+    PopupMenu.Popup(self.Left + FMenuRect.Left, self.Top + Height);
+    Exit;
+  end;
+
   // Check pin button click
   if PtInRect(FPinRect, Point(X, Y)) then
   begin
@@ -1004,7 +1053,7 @@ end;
 procedure TfrmPrevW.FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
 var
   I, NewHover: Integer;
-  NewPinHover: Boolean;
+  NewPinHover, NewMenuHover: Boolean;
 begin
   if FIsDragging then
   begin
@@ -1023,12 +1072,14 @@ begin
     end;
   end;
 
+  NewMenuHover := PtInRect(FMenuRect, Point(X, Y));
   NewPinHover := PtInRect(FPinRect, Point(X, Y));
 
-  if (NewHover <> FHoverIndex) or (NewPinHover <> FPinHover) then
+  if (NewHover <> FHoverIndex) or (NewPinHover <> FPinHover) or (NewMenuHover <> FMenuHover) then
   begin
     FHoverIndex := NewHover;
     FPinHover := NewPinHover;
+    FMenuHover := NewMenuHover;
     Invalidate;
   end;
 end;

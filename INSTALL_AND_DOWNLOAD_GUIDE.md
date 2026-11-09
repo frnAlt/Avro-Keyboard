@@ -152,10 +152,11 @@ Once you run the compiled `Avro Keyboard.exe`, verify all modern upgrades:
 
 | Feature | How to Test & Verify | Expected Result |
 | :--- | :--- | :--- |
-| **Windows 11 Acrylic Glassmorphism** | Launch Avro Keyboard. Check the floating TopBar. | Translucent frosted glass effect (`ACCENT_ENABLE_ACRYLICBLURBEHIND`) with rounded corners and modern SVG vector icons. |
-| **Skin Switcher (Light / Dark)** | Click the Palette / Skin icon on the floating TopBar $\rightarrow$ Select `macOS Glass` or `macOS Glass Dark`. | TopBar dynamically changes between translucent frosted light and dark glass. |
-| **Phonetic Candidate Bar** | Switch Avro to Bangla mode (`F12`). Type casual English like `kemon`, `valo`, `bhalo`, `acho`, `dhonnobad`. | A horizontal frosted glass candidate strip pops up with numbered suggestions (`[1] কেমন`, `[2] ...`). |
+| **Windows 11 Acrylic Glassmorphism (TopBar)** | Launch Avro Keyboard. Check the floating TopBar. | Translucent frosted glass effect (`ACCENT_ENABLE_ACRYLICBLURBEHIND`) with rounded corners, specular 1px border, and high-DPI vector icons. |
+| **Floating Glass Screen Icon (Collapsed TopBar)** | Leave the TopBar untouched for 15 seconds. | The bar smoothly collapses into a sleek, rounded translucent glass icon pill on screen with the Avro logo. Hovering expands it instantly. |
+| **Modern Transparent Glass Text Preview Window** | Switch Avro to Bangla mode (`F12`). Type casual English like `kemon`, `valo`, `bhalo`, `acho`, `dhonnobad`. | A horizontal translucent acrylic glass strip appears above the cursor with modern vector pushpin icon, 3-dots menu glyph, and numbered candidate chips (`[1] কেমন`, `[2] ...`). |
 | **Number Key Selection** | While candidate bar is visible, press `1`, `2`, or `3` (or click candidate chip). | The chosen candidate is instantly committed into your document. |
+| **Skin Switcher (Light / Dark Glass)** | Click the Palette / Skin icon on the floating TopBar $\rightarrow$ Select `macOS Glass` or `macOS Glass Dark`. | TopBar and preview bar dynamically change between translucent frosted light and dark glass. |
 | **Bangla Voice Dictation** | Click the **Microphone icon** on the floating TopBar or press `Ctrl + Shift + V`. | TopBar shows live audio input glow. Speak Bangla phrases; text is typed into the cursor position in real time. |
 | **Realtime Google Translator** | Click the **Translate icon** or press `Ctrl + Shift + T`. | Dual-pane translator window opens. Type English to get Bangla or vice-versa with instant copy/insert. |
 | **Single-Instance Safety** | Launch `Avro Keyboard.exe` a second time while it is already open. | Instead of crashing or showing an error dialog, the existing floating TopBar smoothly animates to the foreground. |

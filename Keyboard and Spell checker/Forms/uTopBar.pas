@@ -192,6 +192,7 @@ type
       procedure WMDROPFILES(var msg: TWMDropFiles); message WM_DROPFILES;
       procedure WMDpiChanged(var Message: TWMDpi); message WM_DPICHANGED;
       procedure WMMouseActivate(var Message: TMessage); message WM_MOUSEACTIVATE;
+      procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
       procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
 
       procedure ExpandTopBar;
@@ -203,6 +204,7 @@ type
       FIsCollapsed: Boolean;
       FExpandedWidth: Integer;
       FIdleSeconds: Integer;
+      FAppIconSavedLeft: Integer;
 
       BMP_AppIcon:      TBitmap;
       BMP_AppIcon_Over: TBitmap;
@@ -303,27 +305,24 @@ var
   EffectiveSkin: string;
 begin
   EffectiveSkin := InterfaceSkin;
+  if (EffectiveSkin = '') or (LowerCase(EffectiveSkin) = 'internalskin*') then
+    EffectiveSkin := 'macOS Glass';
+
   if (LowerCase(EffectiveSkin) = 'macos glass') and DarkModeIsEnabled then
   begin
-    if FileExists(GetAvroDataDir + 'Skin\macOS Glass Dark.avroskin') then
+    if FileExists(GetAvroDataDir + 'Skin\macOS Glass Dark.avroskin') or
+       FileExists(ExtractFilePath(Application.ExeName) + 'Skin\macOS Glass Dark.avroskin') or
+       FileExists(ExtractFilePath(Application.ExeName) + 'assets\skins\macOS Glass Dark.avroskin') then
       EffectiveSkin := 'macOS Glass Dark';
   end;
 
   if LowerCase(PrevSkin) = LowerCase(EffectiveSkin) then
     exit;
 
-  if LowerCase(EffectiveSkin) = 'internalskin*' then
-    LoadSkin('internalskin*')
-  else
+  if LoadSkin(GetAvroDataDir + 'Skin\' + EffectiveSkin + '.avroskin') = False then
   begin
-    if LoadSkin(GetAvroDataDir + 'Skin\' + EffectiveSkin + '.avroskin') = False then
-    begin
-      Application.MessageBox(PChar('Error loading ' + GetAvroDataDir + 'Skin\' + EffectiveSkin + '.avroskin' + #10 + '' + #10 +
-            'Skin switched back to Default one.'), 'Avro Keyboard', MB_OK + MB_ICONHAND + MB_DEFBUTTON1 + MB_APPLMODAL);
-      InterfaceSkin := 'internalskin*';
-      EffectiveSkin := 'internalskin*';
+    if LoadSkin(EffectiveSkin) = False then
       LoadSkin('internalskin*');
-    end;
   end;
   PrevSkin := EffectiveSkin;
 
@@ -455,8 +454,10 @@ begin
   DragAcceptFiles(Handle, True);
 
   DoubleBuffered := True;
+  Color := clBlack;
   FIsCollapsed := False;
   FExpandedWidth := Width;
+  FAppIconSavedLeft := ImgAppIcon.Left;
   FIdleSeconds := 0;
   FVoiceGlowLevel := 0.0;
 
@@ -1260,6 +1261,11 @@ begin
   Message.Result := MA_NOACTIVATE;
 end;
 
+procedure TTopBar.WMEraseBkgnd(var Message: TWMEraseBkgnd);
+begin
+  Message.Result := 1;
+end;
+
 procedure TTopBar.WMPaint(var Message: TWMPaint);
 var
   R: TRect;
@@ -1275,16 +1281,23 @@ begin
   FIsCollapsed := False;
   if FExpandedWidth > 64 then
     Width := FExpandedWidth;
+  if FAppIconSavedLeft > 0 then
+    ImgAppIcon.Left := FAppIconSavedLeft;
   RefreshGlassStyle;
+  Invalidate;
 end;
 
 procedure TTopBar.CollapseTopBar;
 begin
   if FIsCollapsed then Exit;
   FExpandedWidth := Width;
+  if ImgAppIcon.Left > 0 then
+    FAppIconSavedLeft := ImgAppIcon.Left;
   FIsCollapsed := True;
   Width := 56;
+  ImgAppIcon.Left := (Width - ImgAppIcon.Width) div 2;
   RefreshGlassStyle;
+  Invalidate;
 end;
 
 procedure TTopBar.SetVoiceGlow(Level: Single);

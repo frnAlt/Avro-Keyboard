@@ -165,6 +165,13 @@ begin
   Data.SizeOfData := SizeOf(AccentPolicy);
 
   Result := SetWindowCompositionAttributeFunc(hWnd, Data);
+  if not Result then
+  begin
+    Policy.AccentState := Ord(ACCENT_ENABLE_BLURBEHIND);
+    Policy.AccentFlags := 0;
+    Policy.GradientColor := 0;
+    Result := SetWindowCompositionAttributeFunc(hWnd, Data);
+  end;
 end;
 
 function EnableWindowRoundedCorners(hWnd: HWND): Boolean;

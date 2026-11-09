@@ -84,11 +84,29 @@ end;
 { =============================================================================== }
 
 function GetAvroDataDir(): string;
+var
+  AppDir: string;
 begin
+  AppDir := ExtractFilePath(Application.ExeName);
+
+  // If local Skin/Keyboard directory exists next to exe, use local directory (portable/dev mode)
+  if DirectoryExists(AppDir + 'Skin') or DirectoryExists(AppDir + 'assets\skins') or
+     DirectoryExists(AppDir + 'Keyboard') or DirectoryExists(AppDir + 'assets\keyboards') then
+  begin
+    Result := AppDir;
+    Exit;
+  end;
+
+  // Check parent directory (when debugging in Delphi IDE under Win32\Release or Win32\Debug)
+  if DirectoryExists(ExtractFilePath(ExcludeTrailingPathDelimiter(AppDir)) + 'assets\skins') then
+  begin
+    Result := ExtractFilePath(ExcludeTrailingPathDelimiter(AppDir));
+    Exit;
+  end;
 
   {$IFDEF PortableOn}
   {$IFNDEF SpellCheckerDll}
-  Result := ExtractFilePath(Application.ExeName);
+  Result := AppDir;
 
   {$ELSE}
   Result := GetDllFolder;

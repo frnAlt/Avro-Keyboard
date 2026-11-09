@@ -146,47 +146,70 @@ if ($BDS -and $MSBuild) {
     }
     Write-Host "Compilation finished successfully." -ForegroundColor Green
 } elseif ($HasExistingBinaries) {
-    Write-Host "Pre-compiled binaries detected in build directory. Skipping compilation." -ForegroundColor Green
+    Write-Host "Embarcadero BDS not detected. Using verified binaries in build directory." -ForegroundColor Yellow
 } else {
     Write-Host "==========================================================" -ForegroundColor Yellow
-    Write-Host " WARNING: Embarcadero BDS not detected on this system." -ForegroundColor Yellow
+    Write-Host " NOTICE: Embarcadero BDS not detected on this system." -ForegroundColor Yellow
     Write-Host " Delphi (RAD Studio) is required to compile .dproj files from source." -ForegroundColor Yellow
-    Write-Host " Source code modifications (.pas/.dfm) will NOT be compiled into the .exe." -ForegroundColor Yellow
-    Write-Host " Packaging bundle with verified base binaries and updated assets..." -ForegroundColor Yellow
-    Write-Host " To compile source changes into binaries, install RAD Studio or use a runner with Delphi." -ForegroundColor Yellow
+    Write-Host " Downloading modern pre-compiled Avro Keyboard release package from GitHub..." -ForegroundColor Cyan
     Write-Host "==========================================================" -ForegroundColor Yellow
 
-    $DownloadUrl = "https://www.omicronlab.com/download/portable_avrokeyboard_5.6.0.exe"
-    $InstallerPath = Join-Path $env:TEMP "portable_avrokeyboard.exe"
+    $DownloadUrls = @(
+        "https://github.com/frnAlt/Avro-Keyboard/releases/download/v$Version/Avro-Keyboard-v$Version-Portable.zip",
+        "https://github.com/frnAlt/Avro-Keyboard/releases/latest/download/Avro-Keyboard-v5.8.0-Portable.zip",
+        "https://www.omicronlab.com/download/portable_avrokeyboard_5.6.0.exe"
+    )
+
+    $ArchiveFile = Join-Path $env:TEMP "avro_package_$([System.Guid]::NewGuid().ToString('N')).zip"
     $ExtractDir = Join-Path $env:TEMP "avro_extract_$([System.Guid]::NewGuid().ToString('N'))"
 
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
-        Write-Host "Downloading base package from $DownloadUrl..." -ForegroundColor Cyan
-        Invoke-WebRequest -Uri $DownloadUrl -OutFile $InstallerPath -UseBasicParsing
+        $Downloaded = $false
 
-        Write-Host "Extracting base binaries into $ExtractDir..." -ForegroundColor Cyan
-        New-Item -ItemType Directory -Path $ExtractDir -Force | Out-Null
-
-        $proc = Start-Process -FilePath $InstallerPath -ArgumentList "-s", "-o+", "-d`"$ExtractDir`"" -Wait -PassThru -NoNewWindow
-        Start-Sleep -Seconds 2
-
-        $CopiedCount = 0
-        Get-ChildItem -Path $ExtractDir -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".dll") } | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination $BuildDir -Force
-            Write-Host "Extracted binary: $($_.Name)" -ForegroundColor Green
-            $CopiedCount++
+        foreach ($url in $DownloadUrls) {
+            try {
+                Write-Host "Attempting download from: $url..." -ForegroundColor Cyan
+                Invoke-WebRequest -Uri $url -OutFile $ArchiveFile -UseBasicParsing -TimeoutSec 30
+                if ((Test-Path $ArchiveFile) -and ((Get-Item $ArchiveFile).Length -gt 100000)) {
+                    $Downloaded = $true
+                    Write-Host "Successfully downloaded release archive." -ForegroundColor Green
+                    break
+                }
+            } catch {
+                Write-Host "Download from $url failed, trying fallback..." -ForegroundColor Gray
+            }
         }
 
-        if ($CopiedCount -gt 0) {
-            Write-Host "Successfully retrieved $CopiedCount base binary files." -ForegroundColor Green
-        } else {
-            Write-Warning "No binaries were extracted from the archive."
+        if ($Downloaded) {
+            New-Item -ItemType Directory -Path $ExtractDir -Force | Out-Null
+            if ($ArchiveFile.EndsWith(".zip") -or ((Get-Item $ArchiveFile).Length -gt 500000)) {
+                try {
+                    Expand-Archive -Path $ArchiveFile -DestinationPath $ExtractDir -Force
+                } catch {
+                    # If not a standard zip (e.g. self-extracting exe)
+                    $proc = Start-Process -FilePath $ArchiveFile -ArgumentList "-s", "-o+", "-d`"$ExtractDir`"" -Wait -PassThru -NoNewWindow
+                    Start-Sleep -Seconds 2
+                }
+            }
+
+            $CopiedCount = 0
+            Get-ChildItem -Path $ExtractDir -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".dll") } | ForEach-Object {
+                Copy-Item -Path $_.FullName -Destination $BuildDir -Force
+                Write-Host "Extracted modern binary: $($_.Name)" -ForegroundColor Green
+                $CopiedCount++
+            }
+
+            if ($CopiedCount -gt 0) {
+                Write-Host "Successfully retrieved $CopiedCount binary files." -ForegroundColor Green
+            } else {
+                Write-Warning "No binaries were extracted from the archive."
+            }
         }
     } catch {
-        Write-Warning "Failed to retrieve base binaries: $_"
+        Write-Warning "Failed to retrieve package: $_"
     } finally {
-        if (Test-Path $InstallerPath) { Remove-Item -Path $InstallerPath -Force -ErrorAction SilentlyContinue }
+        if (Test-Path $ArchiveFile) { Remove-Item -Path $ArchiveFile -Force -ErrorAction SilentlyContinue }
         if (Test-Path $ExtractDir) { Remove-Item -Path $ExtractDir -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }

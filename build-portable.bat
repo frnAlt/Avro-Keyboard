@@ -23,6 +23,10 @@ if not defined BDS (
         call "C:\Program Files (x86)\Embarcadero\Studio\23.0\bin\rsvars.bat"
     ) else if exist "C:\Program Files (x86)\Embarcadero\Studio\22.0\bin\rsvars.bat" (
         call "C:\Program Files (x86)\Embarcadero\Studio\22.0\bin\rsvars.bat"
+    ) else if exist "C:\Program Files (x86)\Embarcadero\Studio\21.0\bin\rsvars.bat" (
+        call "C:\Program Files (x86)\Embarcadero\Studio\21.0\bin\rsvars.bat"
+    ) else if exist "C:\Program Files (x86)\Embarcadero\Studio\20.0\bin\rsvars.bat" (
+        call "C:\Program Files (x86)\Embarcadero\Studio\20.0\bin\rsvars.bat"
     )
 )
 

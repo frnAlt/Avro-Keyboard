@@ -79,14 +79,14 @@ end;
 
 function IsLowSpecPC: Boolean;
 begin
-  // Lower than 4096 MB RAM or Windows 7/8
-  Result := (GetSystemTotalRAM_MB < 3800) or (GetOSVersion < wvWin10);
+  // Lower than 2048 MB RAM or older than Windows 10
+  Result := (GetSystemTotalRAM_MB < 2048) or (TOSVersion.Major < 10);
 end;
 
 function IsAcrylicSupported: Boolean;
 begin
-  // Acrylic blur requires modern Windows 10 (Build 17134+) or Windows 11 and at least 4GB RAM
-  Result := (GetOSVersion >= wvWin10) and not IsLowSpecPC;
+  // Acrylic blur is supported on Windows 10 and Windows 11
+  Result := (TOSVersion.Major >= 10);
 end;
 
 function FindModelDirectory: string;

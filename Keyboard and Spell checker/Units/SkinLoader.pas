@@ -41,6 +41,31 @@ uses
   uFileFolderHandling;
 {$HINTS Off}
 
+function ResolveSkinPath(const InputPath: string): string;
+var
+  FileName, BaseAppDir: string;
+begin
+  Result := InputPath;
+  if (LowerCase(InputPath) = 'internalskin*') or FileExists(InputPath) then
+    Exit;
+
+  FileName := ExtractFileName(InputPath);
+  BaseAppDir := ExtractFilePath(Application.ExeName);
+
+  if FileExists(BaseAppDir + 'Skin\' + FileName) then
+    Result := BaseAppDir + 'Skin\' + FileName
+  else if FileExists(BaseAppDir + 'assets\skins\' + FileName) then
+    Result := BaseAppDir + 'assets\skins\' + FileName
+  else if FileExists(ExtractFilePath(ExcludeTrailingPathDelimiter(BaseAppDir)) + 'assets\skins\' + FileName) then
+    Result := ExtractFilePath(ExcludeTrailingPathDelimiter(BaseAppDir)) + 'assets\skins\' + FileName
+  else if FileExists(GetAvroDataDir + 'Skin\' + FileName) then
+    Result := GetAvroDataDir + 'Skin\' + FileName
+  else if FileExists(BaseAppDir + 'Skin\macOS Glass.avroskin') then
+    Result := BaseAppDir + 'Skin\macOS Glass.avroskin'
+  else if FileExists(BaseAppDir + 'assets\skins\macOS Glass.avroskin') then
+    Result := BaseAppDir + 'assets\skins\macOS Glass.avroskin';
+end;
+
 function LoadSkin(const FullSkinPath: string): Boolean;
 var
   XML:                 IXMLDocument;
@@ -56,6 +81,7 @@ var
   ExitAdded:           Boolean;
   Resource:            TResourceStream;
   m_Converter:         TSkinLayoutConverter;
+  ActualSkinPath:      string;
 
 begin
   Result := False;
@@ -75,12 +101,14 @@ begin
       XML.Active := true;
       XML.Encoding := 'UTF-8';
 
-      if LowerCase(FullSkinPath) <> 'internalskin*' then
+      ActualSkinPath := ResolveSkinPath(FullSkinPath);
+
+      if (LowerCase(ActualSkinPath) <> 'internalskin*') and FileExists(ActualSkinPath) then
       begin
         m_Converter := TSkinLayoutConverter.Create;
-        m_Converter.CheckConvertSkin(FullSkinPath);
+        m_Converter.CheckConvertSkin(ActualSkinPath);
         FreeAndNil(m_Converter);
-        XML.LoadFromFile(FullSkinPath);
+        XML.LoadFromFile(ActualSkinPath);
       end
       else
       begin

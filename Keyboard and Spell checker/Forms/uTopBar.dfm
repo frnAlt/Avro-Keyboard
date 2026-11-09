@@ -6,7 +6,7 @@ object TopBar: TTopBar
   BorderStyle = bsNone
   ClientHeight = 240
   ClientWidth = 533
-  Color = clBtnFace
+  Color = clBlack
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
