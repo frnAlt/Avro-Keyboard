@@ -298,23 +298,33 @@ end;
 { =============================================================================== }
 
 procedure TTopBar.ApplySkin;
+var
+  EffectiveSkin: string;
 begin
-  if LowerCase(PrevSkin) = LowerCase(InterfaceSkin) then
+  EffectiveSkin := InterfaceSkin;
+  if (LowerCase(EffectiveSkin) = 'macos glass') and DarkModeIsEnabled then
+  begin
+    if FileExists(GetAvroDataDir + 'Skin\macOS Glass Dark.avroskin') then
+      EffectiveSkin := 'macOS Glass Dark';
+  end;
+
+  if LowerCase(PrevSkin) = LowerCase(EffectiveSkin) then
     exit;
 
-  if LowerCase(InterfaceSkin) = 'internalskin*' then
+  if LowerCase(EffectiveSkin) = 'internalskin*' then
     LoadSkin('internalskin*')
   else
   begin
-    if LoadSkin(GetAvroDataDir + 'Skin\' + InterfaceSkin + '.avroskin') = False then
+    if LoadSkin(GetAvroDataDir + 'Skin\' + EffectiveSkin + '.avroskin') = False then
     begin
-      Application.MessageBox(PChar('Error loading' + GetAvroDataDir + 'Skin\' + InterfaceSkin + '.avroskin' + #10 + '' + #10 +
+      Application.MessageBox(PChar('Error loading ' + GetAvroDataDir + 'Skin\' + EffectiveSkin + '.avroskin' + #10 + '' + #10 +
             'Skin switched back to Default one.'), 'Avro Keyboard', MB_OK + MB_ICONHAND + MB_DEFBUTTON1 + MB_APPLMODAL);
       InterfaceSkin := 'internalskin*';
+      EffectiveSkin := 'internalskin*';
       LoadSkin('internalskin*');
     end;
   end;
-  PrevSkin := InterfaceSkin;
+  PrevSkin := EffectiveSkin;
 
   ImgAppIcon.Picture.Bitmap.Assign(BMP_AppIcon);
   ImgButtonMode.Picture.Bitmap.Assign(BMP_ButtonModeE);
@@ -700,15 +710,13 @@ begin
       if (X < 0) or (Y < 0) then
       begin
         ThisResult := False;
-        Inc(FIdleSeconds);
-        if (FIdleSeconds >= 10) and not FIsCollapsed then
+        if (SecondsBetween(now, EnableTime) >= 15) and not FIsCollapsed then
           CollapseTopBar;
       end
       else if (X > Self.Width) or (Y > Self.Height) then
       begin
         ThisResult := False;
-        Inc(FIdleSeconds);
-        if (FIdleSeconds >= 10) and not FIsCollapsed then
+        if (SecondsBetween(now, EnableTime) >= 15) and not FIsCollapsed then
           CollapseTopBar;
       end
       else
@@ -1251,20 +1259,11 @@ end;
 
 procedure TTopBar.WMPaint(var Message: TWMPaint);
 var
-  DC: HDC;
-  PS: TPaintStruct;
   R: TRect;
 begin
-  DC := BeginPaint(Handle, PS);
-  try
-    Canvas.Handle := DC;
-    R := ClientRect;
-    DrawGlassmorphismBorder(Canvas, R, DarkModeIsEnabled, FVoiceGlowLevel);
-  finally
-    Canvas.Handle := 0;
-    EndPaint(Handle, PS);
-  end;
   inherited;
+  R := ClientRect;
+  DrawGlassmorphismBorder(Canvas, R, DarkModeIsEnabled, FVoiceGlowLevel);
 end;
 
 procedure TTopBar.ExpandTopBar;
@@ -1297,8 +1296,8 @@ end;
 procedure TTopBar.RefreshGlassStyle;
 begin
   EnableWindowAcrylicBlur(Handle, DarkModeIsEnabled, 150);
-  EnableWindowRoundedCorners(Handle);
-  ApplyPillWindowRegion(Handle, Width, Height);
+  if not EnableWindowRoundedCorners(Handle) then
+    ApplyPillWindowRegion(Handle, Width, Height);
   Invalidate;
 end;
 

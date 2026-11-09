@@ -171,6 +171,7 @@ function EnableWindowRoundedCorners(hWnd: HWND): Boolean;
 var
   CornerPreference: DWORD;
   DarkModeVal: BOOL;
+  hr: HRESULT;
 begin
   Result := False;
   InitCompositionAPIs;
@@ -179,12 +180,13 @@ begin
   begin
     // Enable Windows 11 Rounded Corners (DWMWCP_ROUND)
     CornerPreference := DWMWCP_ROUND;
-    DwmSetWindowAttributeFunc(hWnd, DWMWA_WINDOW_CORNER_PREFERENCE, @CornerPreference, SizeOf(CornerPreference));
+    hr := DwmSetWindowAttributeFunc(hWnd, DWMWA_WINDOW_CORNER_PREFERENCE, @CornerPreference, SizeOf(CornerPreference));
+    if hr = S_OK then
+      Result := True;
 
     // Match dark mode
     DarkModeVal := DarkModeIsEnabled;
     DwmSetWindowAttributeFunc(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, @DarkModeVal, SizeOf(DarkModeVal));
-    Result := True;
   end;
 end;
 

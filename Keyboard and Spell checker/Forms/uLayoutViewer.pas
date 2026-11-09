@@ -86,6 +86,8 @@ uses
   uRegistrySettings,
   uFileFolderHandling,
   uWindowHandlers,
+  uGlassmorphism,
+  WindowsDarkMode,
   uTopBar;
 
 const
@@ -239,6 +241,9 @@ var
   errorPos:   Integer;
   PosX, PosY: Integer;
 begin
+  MakeNeverActiveWindow(Self.Handle);
+  EnableWindowRoundedCorners(Self.Handle);
+  EnableWindowAcrylicBlur(Self.Handle, DarkModeIsEnabled, 180);
 
   SetWindowLong(Application.Handle, GWL_EXSTYLE, GetWindowLong(Application.Handle, GWL_EXSTYLE) or WS_EX_APPWINDOW);
 

@@ -40,12 +40,14 @@ const
   WM_AVRO_TOGGLE_MODE     = WM_AVRO_BASE + 1;
   WM_AVRO_TOGGLE_ENCODING = WM_AVRO_BASE + 2;
   WM_AVRO_SPELL_CHECK     = WM_AVRO_BASE + 3;
-  WM_AVRO_VOICE_TOGGLE    = WM_AVRO_BASE + 4;
+  WM_AVRO_VOICE_TOGGLE      = WM_AVRO_BASE + 4;
+  WM_AVRO_TRANSLATOR_TOGGLE = WM_AVRO_BASE + 5;
 
 procedure PostToggleMode;
 procedure PostToggleOutputEncoding;
 procedure PostSpellCheck;
 procedure PostVoiceToggle;
+procedure PostTranslatorToggle;
 
 implementation
 
@@ -81,6 +83,12 @@ procedure PostVoiceToggle;
 begin
   if Assigned(AvroMainForm1) then
     PostMessage(AvroMainForm1.Handle, WM_AVRO_VOICE_TOGGLE, 0, 0);
+end;
+
+procedure PostTranslatorToggle;
+begin
+  if Assigned(AvroMainForm1) then
+    PostMessage(AvroMainForm1.Handle, WM_AVRO_TRANSLATOR_TOGGLE, 0, 0);
 end;
 
 { =============================================================================== }
@@ -457,6 +465,18 @@ begin
           ShouldBlock := True;
           goto ExitHere;
         end;
+      end
+      else if (kbdllhs.vkCode = Ord('V')) and IsTrueShift and IsControl and (not IsAlter) then
+      begin
+        PostVoiceToggle;
+        ShouldBlock := True;
+        goto ExitHere;
+      end
+      else if (kbdllhs.vkCode = Ord('T')) and IsTrueShift and IsControl and (not IsAlter) then
+      begin
+        PostTranslatorToggle;
+        ShouldBlock := True;
+        goto ExitHere;
       end;
     end
 
@@ -686,6 +706,16 @@ begin
           ShouldBlock := True;
           goto ExitHere;
         end;
+      end
+      else if (kbdllhs.vkCode = Ord('V')) and IsTrueShift and IsControl and (not IsAlter) then
+      begin
+        ShouldBlock := True;
+        goto ExitHere;
+      end
+      else if (kbdllhs.vkCode = Ord('T')) and IsTrueShift and IsControl and (not IsAlter) then
+      begin
+        ShouldBlock := True;
+        goto ExitHere;
       end;
     end;
 

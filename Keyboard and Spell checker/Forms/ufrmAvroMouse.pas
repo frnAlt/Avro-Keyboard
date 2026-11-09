@@ -187,6 +187,8 @@ uses
   KeyboardFunctions,
   uWindowHandlers,
   uRegistrySettings,
+  uGlassmorphism,
+  WindowsDarkMode,
   clsLayout;
 
 const
@@ -316,6 +318,10 @@ end;
 
 procedure TfrmAvroMouse.FormCreate(Sender: TObject);
 begin
+  MakeNeverActiveWindow(Self.Handle);
+  EnableWindowRoundedCorners(Self.Handle);
+  EnableWindowAcrylicBlur(Self.Handle, DarkModeIsEnabled, 180);
+
   try
     if (StrToInt(AvroMousePosX) > Screen.Width) or (StrToInt(AvroMousePosX) < 0) then
       AvroMousePosX := '0';

@@ -149,9 +149,11 @@ if ($BDS -and $MSBuild) {
     Write-Host "Pre-compiled binaries detected in build directory. Skipping compilation." -ForegroundColor Green
 } else {
     Write-Host "==========================================================" -ForegroundColor Yellow
-    Write-Host " Embarcadero BDS not detected on this system." -ForegroundColor Yellow
-    Write-Host " (Delphi is required to compile .dproj files from source)." -ForegroundColor Yellow
-    Write-Host " Retrieving verified base binaries to package release bundle..." -ForegroundColor Yellow
+    Write-Host " WARNING: Embarcadero BDS not detected on this system." -ForegroundColor Yellow
+    Write-Host " Delphi (RAD Studio) is required to compile .dproj files from source." -ForegroundColor Yellow
+    Write-Host " Source code modifications (.pas/.dfm) will NOT be compiled into the .exe." -ForegroundColor Yellow
+    Write-Host " Packaging bundle with verified base binaries and updated assets..." -ForegroundColor Yellow
+    Write-Host " To compile source changes into binaries, install RAD Studio or use a runner with Delphi." -ForegroundColor Yellow
     Write-Host "==========================================================" -ForegroundColor Yellow
 
     $DownloadUrl = "https://www.omicronlab.com/download/portable_avrokeyboard_5.6.0.exe"
@@ -242,12 +244,38 @@ if (-not $SkipZip) {
         Copy-Item -Path $_.FullName -Destination $PortableDir
     }
 
-    # Copy assets
-    $AssetDirs = @("keyboard-layouts", "skins", "fonts", "docs")
-    foreach ($ad in $AssetDirs) {
-        $srcAsset = Join-Path $ScriptDir "assets\$ad"
-        if (Test-Path $srcAsset) {
-            Copy-Item -Path $srcAsset -Destination (Join-Path $PortableDir $ad) -Recurse -Force
+    # Copy assets into both canonical Avro directory names AND kebab-case aliases
+    # 1. Skin directory (Avro code expects "Skin\")
+    $SkinSrc = Join-Path $ScriptDir "assets\skins"
+    if (Test-Path $SkinSrc) {
+        Copy-Item -Path $SkinSrc -Destination (Join-Path $PortableDir "Skin") -Recurse -Force
+        Copy-Item -Path $SkinSrc -Destination (Join-Path $PortableDir "skins") -Recurse -Force
+    }
+
+    # 2. Keyboard Layouts directory (Avro code expects "Keyboard Layouts\")
+    $LayoutSrc = Join-Path $ScriptDir "assets\keyboard-layouts"
+    if (Test-Path $LayoutSrc) {
+        Copy-Item -Path $LayoutSrc -Destination (Join-Path $PortableDir "Keyboard Layouts") -Recurse -Force
+        Copy-Item -Path $LayoutSrc -Destination (Join-Path $PortableDir "keyboard-layouts") -Recurse -Force
+    }
+
+    # 3. Virtual Font directory (Avro code expects "Virtual Font\Siyamrupali.ttf")
+    $FontSrc = Join-Path $ScriptDir "assets\fonts"
+    if (Test-Path $FontSrc) {
+        Copy-Item -Path $FontSrc -Destination (Join-Path $PortableDir "Virtual Font") -Recurse -Force
+        Copy-Item -Path $FontSrc -Destination (Join-Path $PortableDir "fonts") -Recurse -Force
+    }
+
+    # 4. Documentation and Help files (Avro code expects HTML/PDF in application root)
+    $DocSrc = Join-Path $ScriptDir "assets\docs"
+    if (Test-Path $DocSrc) {
+        Get-ChildItem -Path $DocSrc -File | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination $PortableDir -Force
+        }
+        Copy-Item -Path $DocSrc -Destination (Join-Path $PortableDir "docs") -Recurse -Force
+        $DocImgSrc = Join-Path $DocSrc "images"
+        if (Test-Path $DocImgSrc) {
+            Copy-Item -Path $DocImgSrc -Destination (Join-Path $PortableDir "images") -Recurse -Force
         }
     }
 
