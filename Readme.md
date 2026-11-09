@@ -3,9 +3,6 @@
 Unicode compliant open source Bangla typing software (IME).
 Visit: [https://www.omicronlab.com](https://www.omicronlab.com "OmicronLab") for latest version.
 
-> 📖 **Looking to download the modern version or fix changes not showing?**  
-> Check the **[Download, Installation & Build Guide (INSTALL_AND_DOWNLOAD_GUIDE.md)](INSTALL_AND_DOWNLOAD_GUIDE.md)** for 1-click portable download instructions, GitHub Actions CI/CD release build triggers, and Delphi local compilation steps.
-
 ## Required Delphi Version
 
 Was tested with **Delphi 12 community edition**
@@ -74,6 +71,8 @@ Automated GitHub Actions workflow (`.github/workflows/build-release.yml`) builds
 - **Dynamic Caret Tracking & DPI Fixes:** Preview suggestion window now tracks text cursor dynamically across multi-monitor setups and Chromium/Electron apps (resolving Issues #114 and #109).
 - **Automated Headless Compilation & CI/CD:** Complete MSBuild compilation scripts and GitHub Actions workflow for zero-click release creation and portable zip packaging (resolving Issue #98).
 
+> **Looking to download the modern version or fix changes not showing?**  
+> Check the **[Download, Installation & Build Guide (INSTALL_AND_DOWNLOAD_GUIDE.md)](INSTALL_AND_DOWNLOAD_GUIDE.md)** for 1-click portable download instructions, GitHub Actions CI/CD release build triggers, and Delphi local compilation steps.
 ## Notable contributions
 
 - [@JayedAhsan](https://github.com/JayedAhsan) (PR [#32](https://github.com/mugli/Avro-Keyboard/pull/32)) - 3rd party dependencies are no longer necessary to compile the source, can be compiled with the latest free Community Edition of Delphi, and perf improvements.
